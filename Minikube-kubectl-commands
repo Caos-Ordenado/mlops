@@ -1,0 +1,136 @@
+#########################
+#     MINIKUBE GUIDE    #
+#########################
+
+# Iniciar Minikube
+minikube start
+
+# Iniciar Minikube con un driver específico (por ejemplo, Docker)
+minikube start --driver=docker
+
+# Ver el estado de Minikube
+minikube status
+
+# Parar Minikube
+minikube stop
+
+# Reiniciar Minikube
+minikube delete
+
+# Abrir el dashboard de Kubernetes en el navegador
+minikube dashboard
+
+# Obtener la IP de Minikube
+minikube ip
+
+# Acceder al shell de Minikube
+minikube ssh
+
+# Listar los addons disponibles
+minikube addons list
+
+# Habilitar un addon (por ejemplo, ingress)
+minikube addons enable ingress
+
+# Deshabilitar un addon
+minikube addons disable ingress
+
+# Configurar el puerto para acceder a un servicio
+minikube service <nombre-del-servicio> --url
+
+# Conectarse a un servicio expuesto
+minikube service <nombre-del-servicio>
+
+# Correr un comando de Docker dentro de Minikube
+minikube docker-env
+eval $(minikube -p minikube docker-env)
+
+#########################
+#    KUBECTL GUIDE      #
+#########################
+
+# Ver la versión de kubectl
+kubectl version --client
+
+# Ver los contextos actuales y el que está activo
+kubectl config get-contexts
+kubectl config use-context minikube
+
+# Obtener información del clúster
+kubectl cluster-info
+
+# Listar todos los nodos en el clúster
+kubectl get nodes
+
+# Listar todos los pods en todos los namespaces
+kubectl get pods --all-namespaces
+
+# Obtener detalles de un pod específico
+kubectl describe pod <nombre-del-pod>
+
+# Ver logs de un pod
+kubectl logs <nombre-del-pod>
+
+# Ejecutar un comando en un pod en ejecución
+kubectl exec -it <nombre-del-pod> -- /bin/bash
+
+# Crear recursos a partir de un archivo YAML
+kubectl apply -f <archivo>.yaml
+
+# Eliminar recursos a partir de un archivo YAML
+kubectl delete -f <archivo>.yaml
+
+# Obtener servicios en el clúster
+kubectl get services
+
+# Obtener despliegues (deployments)
+kubectl get deployments
+
+# Escalar un deployment
+kubectl scale deployment <nombre-del-deployment> --replicas=<número>
+
+# Actualizar una imagen en un deployment
+kubectl set image deployment/<nombre-del-deployment> <nombre-del-contenedor>=<nueva-imagen>
+
+# Reemplazar un deployment a partir de un archivo YAML
+kubectl replace -f <archivo>.yaml
+
+# Ver eventos en el clúster
+kubectl get events
+
+# Obtener detalles de los recursos del clúster
+kubectl get all
+
+# Borrar un pod específico
+kubectl delete pod <nombre-del-pod>
+
+# Obtener información detallada del clúster
+kubectl describe nodes
+
+# Obtener recursos por namespace
+kubectl get all -n <namespace>
+
+# Crear un namespace
+kubectl create namespace <nombre-del-namespace>
+
+# Eliminar un namespace
+kubectl delete namespace <nombre-del-namespace>
+
+# Cambiar el namespace por defecto
+kubectl config set-context --current --namespace=<nombre-del-namespace>
+
+#########################
+#   COMANDOS EXTRA      #
+#########################
+
+# Verificar la configuración actual de kubectl
+kubectl config view
+
+# Obtener configuraciones de recursos en formato YAML
+kubectl get <tipo-recurso> <nombre-recurso> -o yaml
+
+# Inspeccionar recursos y dependencias
+kubectl explain <recurso>
+
+# Actualizar automáticamente recursos mientras se edita el YAML
+kubectl edit <recurso> <nombre-recurso>
