@@ -1,0 +1,12 @@
+# Servicio Authelia
+apiVersion: v1
+kind: Service
+metadata:
+  name: authelia-service
+spec:
+  selector:
+    app: authelia
+  ports:
+    - protocol: TCP
+      port: 9091
+      targetPort: 9091

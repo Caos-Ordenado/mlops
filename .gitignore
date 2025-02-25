@@ -1,1 +1,8 @@
 /.idea/
+.DS_Store
+
+# Kubernetes runtime files
+*-pvc.json
+
+# Secrets
+k8s/authelia/secrets.yml

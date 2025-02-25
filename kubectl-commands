@@ -1,49 +1,9 @@
-#########################
-#     MINIKUBE GUIDE    #
-#########################
+###########################
+#     CLOUDFLARE GUIDE    #
+###########################
 
-# Iniciar Minikube
-minikube start
-
-# Iniciar Minikube con un driver específico (por ejemplo, Docker)
-minikube start --driver=docker
-
-# Ver el estado de Minikube
-minikube status
-
-# Parar Minikube
-minikube stop
-
-# Reiniciar Minikube
-minikube delete
-
-# Abrir el dashboard de Kubernetes en el navegador
-minikube dashboard
-
-# Obtener la IP de Minikube
-minikube ip
-
-# Acceder al shell de Minikube
-minikube ssh
-
-# Listar los addons disponibles
-minikube addons list
-
-# Habilitar un addon (por ejemplo, ingress)
-minikube addons enable ingress
-
-# Deshabilitar un addon
-minikube addons disable ingress
-
-# Configurar el puerto para acceder a un servicio
-minikube service <nombre-del-servicio> --url
-
-# Conectarse a un servicio expuesto
-minikube service <nombre-del-servicio>
-
-# Correr un comando de Docker dentro de Minikube
-minikube docker-env
-eval $(minikube -p minikube docker-env)
+Open tunnel
+cloudflared access tcp --hostname k3s.reyops.com --url localhost:2223
 
 #########################
 #    KUBECTL GUIDE      #

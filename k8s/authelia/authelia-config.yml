@@ -1,0 +1,37 @@
+---
+server:
+  port: 9091
+
+log:
+  level: debug
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    watch: true
+
+access_control:
+  default_policy: one_factor
+  rules:
+    - domain: "terraform.reyops.com"
+      policy: two_factor
+
+session:
+  name: authelia_session
+  domain: reyops.com
+  expiration: 1h
+  inactivity: 5m
+  secret: ${AUTHELIA_SESSION_SECRET}
+
+storage:
+  encryption_key: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+  local:
+    path: /config/db.sqlite3
+
+identity_validation:
+  reset_password:
+    jwt_secret: ${AUTHELIA_JWT_SECRET}
+
+notifier:
+  filesystem:
+    filename: /config/notification.txt
