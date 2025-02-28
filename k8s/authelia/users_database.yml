@@ -1,9 +1,0 @@
-# Usuarios y contraseñas (bcrypt)
-users:
-  fabian:
-    password: $2b$12$1UvzSLLffs3NQLqhQ3wAdOPvYRxmcMVzXJ/eHSbbP7C08bmQhBfBG
-    displayname: "Fabian"
-    email: user@example.com
-    groups:
-      - admins
-

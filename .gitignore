@@ -5,4 +5,4 @@
 *-pvc.json
 
 # Secrets
-k8s/authelia/secrets.yml
+**/secrets.yml
