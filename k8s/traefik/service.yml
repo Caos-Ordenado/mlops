@@ -10,10 +10,6 @@ spec:
       targetPort: 80
       protocol: TCP
       name: web
-    - port: 443
-      targetPort: 443
-      protocol: TCP
-      name: websecure
     - port: 8080
       targetPort: 8080
       protocol: TCP

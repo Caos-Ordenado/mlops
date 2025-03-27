@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+spec:
+  ports:
+  - name: https-ctrl
+    port: 8081
+    protocol: TCP
+    targetPort: 8081
+  selector:
+    app.kubernetes.io/name: argocd-repo-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+spec:
+  ports:
+  - name: https-ctrl
+    port: 8082
+    protocol: TCP
+    targetPort: 8082
+  selector:
+    app.kubernetes.io/name: argocd-application-controller
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-repo-server
+    spec:
+      containers:
+      - name: argocd-repo-server
+        image: quay.io/argoproj/argocd:v2.8.4
+        imagePullPolicy: IfNotPresent
+        command:
+          - argocd-repo-server
+          - --redis
+          - argocd-redis:6379
+        ports:
+          - name: https-ctrl
+            containerPort: 8081
+            protocol: TCP
+        env:
+          - name: ARGOCD_REDIS_SERVER
+            value: argocd-redis:6379
+          - name: ARGOCD_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: argocd-redis
+                key: redis-password
+        volumeMounts:
+          - name: argocd-ssh-known-hosts-cm
+            mountPath: /app/config/ssh
+      volumes:
+      - name: argocd-ssh-known-hosts-cm
+        configMap:
+          name: argocd-ssh-known-hosts-cm
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-application-controller
+    spec:
+      containers:
+      - name: argocd-application-controller
+        image: quay.io/argoproj/argocd:v2.8.4
+        imagePullPolicy: IfNotPresent
+        command:
+          - argocd-application-controller
+          - --redis
+          - argocd-redis:6379
+        ports:
+          - name: https-ctrl
+            containerPort: 8082
+            protocol: TCP
+        env:
+          - name: ARGOCD_REDIS_SERVER
+            value: argocd-redis:6379
+          - name: ARGOCD_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: argocd-redis
+                key: redis-password
+        volumeMounts:
+          - name: argocd-ssh-known-hosts-cm
+            mountPath: /app/config/ssh
+      volumes:
+      - name: argocd-ssh-known-hosts-cm
+        configMap:
+          name: argocd-ssh-known-hosts-cm 

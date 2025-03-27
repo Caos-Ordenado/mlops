@@ -1,4 +1,6 @@
 /.idea/
+.history/
+
 .DS_Store
 
 # Kubernetes runtime files
@@ -6,3 +8,8 @@
 
 # Secrets
 **/secrets.yml
+
+privatekey
+publickey
+mac_privatekey
+mac_publickey
