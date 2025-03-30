@@ -31,6 +31,30 @@ spec:
                     type: string
                   targetRevision:
                     type: string
+                  helm:
+                    type: object
+                    properties:
+                      valueFiles:
+                        type: array
+                        items:
+                          type: string
+                      values:
+                        type: string
+                      releaseName:
+                        type: string
+                      version:
+                        type: string
+                      parameters:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                            forceString:
+                              type: boolean
               destination:
                 type: object
                 properties:
@@ -52,6 +76,24 @@ spec:
                         type: boolean
                       selfHeal:
                         type: boolean
+                  syncOptions:
+                    type: array
+                    items:
+                      type: string
+                  retry:
+                    type: object
+                    properties:
+                      limit:
+                        type: integer
+                      backoff:
+                        type: object
+                        properties:
+                          duration:
+                            type: string
+                          factor:
+                            type: integer
+                          maxDuration:
+                            type: string
           status:
             type: object
             properties:
@@ -59,6 +101,20 @@ spec:
                 type: string
               healthStatus:
                 type: string
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    message:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
     served: true
     storage: true
     subresources:
@@ -126,6 +182,28 @@ spec:
                             properties:
                               path:
                                 type: string
+                              exclude:
+                                type: boolean
+                              recurse:
+                                type: boolean
+                    matrix:
+                      type: object
+                      properties:
+                        generators:
+                          type: array
+                          items:
+                            type: object
+                    merge:
+                      type: object
+                      properties:
+                        generators:
+                          type: array
+                          items:
+                            type: object
+                        mergeKeys:
+                          type: array
+                          items:
+                            type: string
               template:
                 type: object
                 properties:
@@ -136,6 +214,14 @@ spec:
                         type: string
                       namespace:
                         type: string
+                      labels:
+                        type: object
+                        additionalProperties:
+                          type: string
+                      annotations:
+                        type: object
+                        additionalProperties:
+                          type: string
                   spec:
                     type: object
                     properties:
@@ -148,6 +234,30 @@ spec:
                             type: string
                           targetRevision:
                             type: string
+                          helm:
+                            type: object
+                            properties:
+                              valueFiles:
+                                type: array
+                                items:
+                                  type: string
+                              values:
+                                type: string
+                              releaseName:
+                                type: string
+                              version:
+                                type: string
+                              parameters:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                    forceString:
+                                      type: boolean
                       destination:
                         type: object
                         properties:
@@ -169,6 +279,24 @@ spec:
                                 type: boolean
                               selfHeal:
                                 type: boolean
+                          syncOptions:
+                            type: array
+                            items:
+                              type: string
+                          retry:
+                            type: object
+                            properties:
+                              limit:
+                                type: integer
+                              backoff:
+                                type: object
+                                properties:
+                                  duration:
+                                    type: string
+                                  factor:
+                                    type: integer
+                                  maxDuration:
+                                    type: string
           status:
             type: object
             properties:

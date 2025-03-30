@@ -1,15 +1,20 @@
 /.idea/
 .history/
 
+.venv/
+.cursor/
+.cursor/
+
 .DS_Store
+home-server.mdc
 
 # Kubernetes runtime files
 *-pvc.json
 
 # Secrets
 **/secrets.yml
+k8s/secrets/generated/
+k8s/secrets/*.env
+.env
+*.env
 
-privatekey
-publickey
-mac_privatekey
-mac_publickey

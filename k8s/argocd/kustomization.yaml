@@ -6,8 +6,15 @@ namespace: argocd
 resources:
   - namespace.yaml
   - rbac.yaml
-  - controllers.yaml
-  - install.yaml
+  - configmaps.yaml
+  - services.yaml
+  - deployments.yaml
+  - secrets.yaml
+  - storage.yaml
+  - redis-secret.yaml
+  - crds.yaml
+  - ingress.yaml
+  - middleware.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: argocd 

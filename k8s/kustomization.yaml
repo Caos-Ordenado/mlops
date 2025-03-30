@@ -4,5 +4,3 @@ kind: Kustomization
 resources:
   - argocd
   - traefik
-  - keycloak
-  - whoami 
