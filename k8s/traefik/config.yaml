@@ -14,6 +14,8 @@ data:
         address: "0.0.0.0:9080"
       traefik:
         address: "0.0.0.0:8080"
+      postgres:
+        address: "0.0.0.0:5432"
     providers:
       kubernetesCRD:
         allowEmptyServices: true

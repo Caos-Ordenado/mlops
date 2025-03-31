@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: postgres
+  namespace: shared
+spec:
+  entryPoints:
+    - postgres
+  routes:
+    - match: HostSNI(`postgres.home.server`)
+      services:
+        - name: postgres
+          port: 5432 
