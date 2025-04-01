@@ -1,0 +1,27 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: web-crawler
+  namespace: shared
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: PathPrefix(`/crawler`)
+      middlewares:
+        - name: crawler-stripprefix
+          namespace: shared
+      services:
+        - name: web-crawler
+          port: 8000
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: crawler-stripprefix
+  namespace: shared
+spec:
+  stripPrefix:
+    prefixes:
+      - /crawler 

@@ -1,14 +1,21 @@
+"""
+Base agent class for web crawling.
+"""
+
+from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Set
 import asyncio
 import os
 from loguru import logger
 from crawl4ai import AsyncWebCrawler, CrawlResult, CrawlerRunConfig, BrowserConfig
 import aiohttp
-from crawler import CrawlerSettings
+from .models import CrawlerSettings
 
-class WebCrawlerAgent:
-    """Agent for crawling web pages."""
+class BaseAgent(ABC):
+    """Base class for web crawling agents."""
+    
     def __init__(self, settings: CrawlerSettings):
+        """Initialize the agent with settings."""
         self.settings = settings
         self.browser_config = BrowserConfig(
             headless=os.getenv("CRAWLER_HEADLESS", "true").lower() == "true",
@@ -18,15 +25,42 @@ class WebCrawlerAgent:
         self.processed_urls: Set[str] = set()
         self.processed_sitemaps: Set[str] = set()
         self.crawler = None
+        logger.info(f"Initialized agent with settings: {settings.model_dump()}")
 
+    @abstractmethod
+    async def crawl_url(self, url: str) -> Dict[str, Any]:
+        """
+        Crawl a single URL and return the extracted data.
+        
+        Args:
+            url: The URL to crawl
+            
+        Returns:
+            Dict containing the crawled data and metadata
+        """
+        pass
+    
+    @abstractmethod
+    async def crawl_urls(self, urls: List[str]) -> List[Dict[str, Any]]:
+        """
+        Crawl multiple URLs in parallel.
+        
+        Args:
+            urls: List of URLs to crawl
+            
+        Returns:
+            List of dictionaries containing the crawled data
+        """
+        pass
+    
     async def __aenter__(self):
-        """Async context manager entry."""
+        """Enter the async context."""
         self.session = aiohttp.ClientSession()
         self.crawler = AsyncWebCrawler(config=self.browser_config)
         return self
-        
+    
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit."""
+        """Exit the async context."""
         if self.session:
             await self.session.close()
         if self.crawler:
@@ -42,25 +76,6 @@ class WebCrawlerAgent:
         )
         result = await self.crawler.arun(url=url, config=config)
         return result[0]  # arun returns a container with one result
-
-    async def crawl_url(self, url: str) -> Dict[str, Any]:
-        """
-        Crawl a single URL and return the extracted data.
-        
-        Args:
-            url: The URL to crawl
-            
-        Returns:
-            Dict containing the crawled data and metadata
-        """
-        try:
-            logger.info(f"Starting crawl of {url}")
-            result = await self._crawl_url_async(url)
-            logger.info(f"Completed crawl of {url}")
-            return self._process_result(result)
-        except Exception as e:
-            logger.error(f"Error crawling {url}: {str(e)}")
-            raise
 
     def _process_result(self, result: CrawlResult) -> Dict[str, Any]:
         """Process the crawl result into a dictionary format."""

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: web-crawler
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/fabian/mlops.git  # Replace with your actual repository URL
+    targetRevision: HEAD
+    path: k8s/web_crawler
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shared
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true 

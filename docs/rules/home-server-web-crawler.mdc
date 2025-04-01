@@ -1,0 +1,165 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Web Crawler Agent Rules
+
+## Project Overview
+The web crawler is a high-performance agent with memory-adaptive features and a RESTful API, deployed in the home server Kubernetes cluster.
+
+## Key Features
+- Asynchronous web crawling with aiohttp
+- Memory-adaptive crawling with configurable thresholds
+- Multiple storage backends (Redis, PostgreSQL)
+- RESTful API with FastAPI and OpenAPI documentation
+- Kubernetes deployment with automated scripts
+
+## Deployment Guidelines
+
+### Automated Deployment
+Use the deployment script for automated updates:
+```bash
+cd agents/web_crawler
+./deploy.sh
+```
+
+The script handles:
+- Building AMD64 Docker image
+- Transferring to home server (internal-vpn-address)
+- Importing to microk8s
+- Applying K8s configurations
+- Deployment verification
+
+### Access Points
+- Main API: http://home.server/crawler/
+- Swagger UI: http://home.server/crawler/docs
+- ReDoc UI: http://home.server/crawler/redoc
+
+### Kubernetes Configuration
+- Namespace: shared
+- Deployment name: web-crawler
+- Service name: web-crawler
+- Ingress: Configured with Traefik
+- Path prefix: /crawler (stripped by middleware)
+
+## Environment Variables
+
+### Core Settings
+```env
+CRAWLER_MAX_PAGES=10000
+CRAWLER_MAX_DEPTH=20
+CRAWLER_TIMEOUT=180000
+CRAWLER_MAX_TOTAL_TIME=300
+CRAWLER_MAX_CONCURRENT_PAGES=10
+CRAWLER_MEMORY_THRESHOLD=80.0
+CRAWLER_USER_AGENT=custom_agent
+CRAWLER_RESPECT_ROBOTS=false
+CRAWLER_DEBUG=false
+```
+
+### Storage Settings
+```env
+CRAWLER_STORAGE_POSTGRES=false
+CRAWLER_STORAGE_REDIS=false
+POSTGRES_HOST=postgres.shared.svc.cluster.local
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=crawler
+REDIS_HOST=redis.shared.svc.cluster.local
+REDIS_PORT=6379
+REDIS_DB=0
+```
+
+## API Usage
+
+### Crawl Endpoint
+POST /crawl
+```json
+{
+  "urls": ["https://example.com"],
+  "max_pages": 100,
+  "max_depth": 3,
+  "allowed_domains": ["example.com"],
+  "exclude_patterns": ["/login", "/admin"],
+  "respect_robots": true,
+  "timeout": 30000,
+  "max_total_time": 60,
+  "max_concurrent_pages": 5,
+  "memory_threshold": 80.0,
+  "storage_redis": false,
+  "storage_postgres": false,
+  "debug": false
+}
+```
+
+### Monitoring Commands
+```bash
+# Pod status
+kubectl get pods -n shared -l app=web-crawler
+
+# Logs
+kubectl logs -n shared -l app=web-crawler --tail=100
+
+# Deployment status
+kubectl describe deployment -n shared web-crawler
+```
+
+## File Structure
+```
+web_crawler/
+├── src/
+│   ├── core/           # Core crawler implementation
+│   ├── api/            # FastAPI application
+│   ├── main.py         # Entry point
+│   └── config.py       # Configuration
+├── k8s/                # Kubernetes manifests
+├── deploy.sh           # Deployment script
+└── requirements.txt    # Dependencies
+```
+
+## Best Practices
+1. Always use the deployment script for updates
+2. Monitor memory usage through debug logs
+3. Use appropriate storage backend based on needs
+4. Check logs after deployment for any issues
+5. Respect the memory threshold settings
+6. Use the health endpoint for monitoring
+
+## Troubleshooting
+1. If pod fails to start, check:
+   - Image build and transfer logs
+   - Pod events and logs
+   - Storage connection settings
+2. If crawler performance degrades:
+   - Monitor memory usage
+   - Check concurrent pages setting
+   - Verify storage backend health
+3. For API issues:
+   - Verify Traefik routing
+   - Check pod logs for errors
+   - Validate request format 
+
+### ArgoCD Configuration
+The web crawler is managed by ArgoCD for GitOps-based deployments. You can view and manage the deployment at:
+- URL: http://home.server/argocd
+- Application Name: web-crawler
+- Project: default
+- Source Path: k8s/web_crawler
+- Destination Namespace: shared
+
+The application is configured for:
+- Automated sync
+- Pruning of removed resources
+- Self-healing of drift
+- Automatic namespace creation
+
+To view the application status:
+```bash
+# Using kubectl
+kubectl get application web-crawler -n argocd
+
+# Using argocd CLI
+argocd app get web-crawler
+``` 

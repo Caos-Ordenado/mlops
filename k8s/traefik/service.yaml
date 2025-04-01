@@ -14,5 +14,9 @@ spec:
       port: 8080
       targetPort: traefik
       name: traefik
+    - protocol: TCP
+      port: 5432
+      targetPort: postgres
+      name: postgres
   selector:
     app.kubernetes.io/name: traefik

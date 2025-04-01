@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - postgres
   routes:
-    - match: HostSNI(`postgres.home.server`)
+    - match: HostSNI(`*`)
       services:
         - name: postgres
           port: 5432 

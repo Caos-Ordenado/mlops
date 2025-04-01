@@ -26,6 +26,13 @@ generate_bcrypt_hash() {
     python3 -c "import bcrypt; print(bcrypt.hashpw('$password'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))"
 }
 
+# Function to generate a PostgreSQL SCRAM-SHA-256 password
+generate_postgres_password() {
+    local length=12
+    local password=$(openssl rand -base64 $length | tr -dc 'a-zA-Z0-9._' | head -c $length)
+    echo "$password"
+}
+
 # Function to replace placeholders in a template
 replace_placeholders() {
     local template=$1
@@ -68,6 +75,11 @@ replace_placeholders() {
             "__SERVER_SECRET_KEY__")
                 value=$(generate_random_string 32)
                 echo -e "${GREEN}Generated server secret key${NC}"
+                ;;
+            "__POSTGRES_PASSWORD__")
+                read -s -p "Enter PostgreSQL password: " value
+                echo
+                echo -e "${GREEN}Password set for PostgreSQL${NC}"
                 ;;
             *)
                 read -p "Enter value for $placeholder: " value

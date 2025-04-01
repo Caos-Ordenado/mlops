@@ -36,7 +36,7 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - $(POSTGRES_USER)
+                - admin
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
@@ -44,7 +44,7 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - $(POSTGRES_USER)
+                - admin
             initialDelaySeconds: 15
             periodSeconds: 20
       volumes:
