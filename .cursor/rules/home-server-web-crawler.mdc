@@ -8,19 +8,56 @@ alwaysApply: true
 ## Project Overview
 The web crawler is a high-performance agent with memory-adaptive features and a RESTful API, deployed in the home server Kubernetes cluster.
 
-## Key Features
+## Features
+
 - Asynchronous web crawling with aiohttp
-- Memory-adaptive crawling with configurable thresholds
-- Multiple storage backends (Redis, PostgreSQL)
-- RESTful API with FastAPI and OpenAPI documentation
-- Kubernetes deployment with automated scripts
-- Configurable logging levels and cleanup intervals
-- Headless browser support with viewport configuration
-- Automatic data retention management
+- Memory-adaptive crawling
+  - Monitors system memory usage during crawling
+  - Automatically adjusts crawling speed and concurrency based on memory usage
+  - Prevents memory exhaustion by pausing when threshold is reached
+  - Configurable memory threshold (default: 80%)
+  - Memory usage logging can be enabled/disabled independently of general logging
+    - Controlled via `CRAWLER_DEBUG` environment variable
+    - When enabled, logs memory usage at key points:
+      - Crawler initialization
+      - Before/after URL crawling
+      - Before/after storage operations
+      - At the start/completion of each depth level
+      - During memory threshold checks
+    - Memory logging is optimized to minimize overhead when disabled
+    - Can be used alongside different logging levels for other components
+- Storage backends
+  - Redis for fast, in-memory storage
+  - PostgreSQL for persistent storage
+- RESTful API with FastAPI
+  - OpenAPI/Swagger documentation
+  - Request/response validation
+  - Async request handling
+  - Health check endpoint
+  - CORS support
 
-## Deployment Guidelines
+## To run locally
 
-### Automated Deployment
+1. Create a virtual environment (recommended):
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Unix/macOS
+# or
+.venv\Scripts\activate  # On Windows
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
+Then edit `.env` with your specific settings.
+
+## Automated Deployment
 Use the deployment script for automated updates:
 ```bash
 cd agents/web_crawler
@@ -57,91 +94,6 @@ No additional secret setup is required as it uses existing infrastructure secret
 - Ingress: Configured with Traefik
 - Path prefix: /crawler (stripped by middleware)
 
-## Environment Variables
-
-### Core Settings
-```env
-CRAWLER_MAX_PAGES=10000
-CRAWLER_MAX_DEPTH=20
-CRAWLER_TIMEOUT=180000
-CRAWLER_MAX_TOTAL_TIME=300
-CRAWLER_MAX_CONCURRENT_PAGES=30
-CRAWLER_MEMORY_THRESHOLD=80.0
-CRAWLER_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.58 Safari/537.36
-CRAWLER_RESPECT_ROBOTS=false
-CRAWLER_DEBUG=false
-CRAWLER_LOG_LEVEL=INFO
-CRAWLER_CLEANUP_INTERVAL_HOURS=24
-CRAWLER_DATA_RETENTION_DAYS=30
-CRAWLER_ALLOWED_DOMAINS=ai.pydantic.dev,example.com
-CRAWLER_EXCLUDE_PATTERNS=*.pdf,*.jpg,*.png,*.gif,*.zip,*.doc,*.docx,*.xls,*.xlsx,*.ppt,*.pptx
-CRAWLER_HEADLESS=true
-CRAWLER_VIEWPORT_HEIGHT=1080
-CRAWLER_VIEWPORT_WIDTH=1920
-```
-
-### Storage Settings
-```env
-CRAWLER_STORAGE_POSTGRES=true
-CRAWLER_STORAGE_REDIS=true
-POSTGRES_HOST=postgres.shared.svc.cluster.local
-POSTGRES_PORT=5432
-POSTGRES_USER=admin
-POSTGRES_DB=web_crawler
-REDIS_HOST=redis.shared.svc.cluster.local
-REDIS_PORT=6379
-REDIS_DB=0
-```
-
-## API Usage
-
-### Crawl Endpoint
-POST /crawl
-```json
-{
-  "urls": ["https://example.com"],
-  "max_pages": 100,
-  "max_depth": 3,
-  "allowed_domains": ["example.com"],
-  "exclude_patterns": ["*.pdf", "*.jpg", "*.png", "*.gif", "*.zip"],
-  "respect_robots": true,
-  "timeout": 30000,
-  "max_total_time": 60,
-  "max_concurrent_pages": 5,
-  "headless": true,
-  "viewport_width": 1920,
-  "viewport_height": 1080
-}
-```
-
-Response:
-```json
-{
-  "results": [
-    {
-      "url": "https://example.com",
-      "title": "Example Domain",
-      "text": "...",
-      "html": "...",
-      "links": ["https://example.com/page1", "..."],
-      "metadata": {
-        "status_code": 200,
-        "headers": {},
-        "content_type": "text/html",
-        "timestamp": 1743511218.223563
-      }
-    }
-  ],
-  "total_urls": 1,
-  "crawled_urls": 1,
-  "elapsed_time": 0.211,
-  "memory_usage": {
-    "current": 45.2,
-    "peak": 52.8
-  }
-}
-```
-
 ### Monitoring Commands
 ```bash
 # Pod status
@@ -156,19 +108,8 @@ kubectl describe deployment -n shared web-crawler
 # ConfigMap
 kubectl get configmap -n shared web-crawler-config -o yaml
 ```
-
-## File Structure
-```
-web_crawler/
-├── src/
-│   ├── core/           # Core crawler implementation
-│   ├── api/            # FastAPI application
-│   ├── main.py         # Entry point
-│   └── config.py       # Configuration
-├── deploy.sh           # Deployment script
-├── start.sh           # Local development script
-└── requirements.txt    # Dependencies
-```
+## REST API
+ - Check readme for examples: [README.md](mdc:agents/web_crawler/README.md)
 
 ## Best Practices
 1. Always use the deployment script for updates
@@ -198,6 +139,22 @@ web_crawler/
    - Check pod logs for errors
    - Validate request format
    - Check storage connectivity
+
+## Output and Logging
+
+The crawler provides detailed output with configurable logging levels:
+
+1. Console Output:
+   - Shows real-time progress of the crawl
+   - Displays basic information about crawled pages
+   - Shows any errors or issues during crawling
+
+2. Log File (`crawler.log`):
+   - Contains detailed logging information based on LOG_LEVEL
+   - Includes timestamps for each operation
+   - Shows full crawl results and memory usage when debug is enabled
+   - Log file is cleaned on each server start
+   - Available log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 # Storage Connections
 

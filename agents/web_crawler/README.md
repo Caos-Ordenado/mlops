@@ -31,7 +31,7 @@ A high-performance web crawler with memory-adaptive features and a RESTful API.
   - Health check endpoint
   - CORS support
 
-## Installation
+## To run locally
 
 1. Create a virtual environment (recommended):
 ```bash
@@ -51,6 +51,13 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 Then edit `.env` with your specific settings.
+
+### Automated Deployment
+Use the deployment script for automated updates:
+```bash
+cd agents/web_crawler
+./deploy.sh
+```
 
 ## Project Structure
 
@@ -206,27 +213,6 @@ The crawler provides detailed output with configurable logging levels:
    - Shows full crawl results and memory usage when debug is enabled
    - Log file is cleaned on each server start
    - Available log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
-
-## Development
-
-To contribute to the project:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a pull request
-
-## License
-
-MIT License
-
-## Deployment
-
-### Prerequisites
-- Docker installed on your local machine
-- `kubectl` configured to access your Kubernetes cluster
-- `sshpass` installed (`brew install sshpass` on macOS)
 
 ### Automated Deployment
 The project includes a `deploy.sh` script that automates the entire process:

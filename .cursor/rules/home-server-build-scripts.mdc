@@ -1,0 +1,199 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Build and Startup Scripts Guidelines
+
+## Script Structure Overview
+Every application should have two main scripts:
+- `start.sh`: For local development and testing
+- `deploy.sh`: For deployment to the home server cluster
+
+## Local Development Script (start.sh)
+```bash
+#!/bin/bash
+
+# Standard configuration
+set -e  # Exit on error
+cd "$(dirname "$0")"  # Navigate to script directory
+
+# Common setup tasks
+- Clean log files if needed
+- Verify development environment
+- Install/update dependencies
+- Load environment variables
+- Start the application
+
+# Example structure:
+#!/bin/bash
+set -e
+cd "$(dirname "$0")"
+
+# Clean logs (if applicable)
+[ -f "app.log" ] && rm app.log
+touch app.log
+
+# Environment verification
+echo "Using Python from: $(which python)"
+echo "Python version: $(python --version)"
+
+# Dependencies
+pip install -r requirements.txt
+
+# Load environment
+[ -f ".env" ] && source .env
+
+# Start application
+PYTHONPATH=$PYTHONPATH:$(pwd)/src python src/main.py
+```
+
+## Deployment Script (deploy.sh)
+```bash
+#!/bin/bash
+
+# Standard configuration
+set -e
+
+# Remote server details
+REMOTE_USER="caos"
+REMOTE_HOST=""
+REMOTE_PASS=""
+IMAGE_NAME="your-app-name"
+IMAGE_TAG="latest"
+K8S_DIR="../../k8s/your-app"
+
+# Cleanup function
+cleanup() {
+    rm -f /tmp/${IMAGE_NAME}.tar
+    rm -f /tmp/app-config.env
+}
+trap cleanup EXIT
+
+# Build process
+1. Update ConfigMap
+2. Build Docker image
+3. Transfer to home server
+4. Import into microk8s
+5. Apply K8s configurations
+6. Restart deployment
+
+# Example structure:
+#!/bin/bash
+set -e
+
+# Configuration
+REMOTE_USER="caos"
+REMOTE_HOST=""
+REMOTE_PASS=""
+IMAGE_NAME="your-app"
+IMAGE_TAG="latest"
+K8S_DIR="../../k8s/your-app"
+
+cleanup() {
+    rm -f /tmp/${IMAGE_NAME}.tar
+    rm -f /tmp/app-config.env
+}
+trap cleanup EXIT
+
+# Update ConfigMap
+grep -v "PASSWORD\|USER" .env | grep -v "^\s*#" | grep "=" > /tmp/app-config.env
+kubectl create configmap ${IMAGE_NAME}-config \
+    --from-env-file=/tmp/app-config.env \
+    -n shared --dry-run=client -o yaml | kubectl apply -f -
+
+# Build image
+docker build \
+    --platform linux/amd64 \
+    --memory-swap -1 \
+    --memory 4g \
+    -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
+# Save and transfer
+docker save ${IMAGE_NAME}:${IMAGE_TAG} -o /tmp/${IMAGE_NAME}.tar
+sshpass -p "${REMOTE_PASS}" scp /tmp/${IMAGE_NAME}.tar ${REMOTE_USER}@${REMOTE_HOST}:/tmp/
+sshpass -p "${REMOTE_PASS}" ssh ${REMOTE_USER}@${REMOTE_HOST} \
+    "echo '${REMOTE_PASS}' | sudo -S microk8s ctr image import /tmp/${IMAGE_NAME}.tar && rm /tmp/${IMAGE_NAME}.tar"
+
+# Apply K8s configs
+kubectl apply -k ${K8S_DIR}
+kubectl rollout restart deployment/${IMAGE_NAME} -n shared
+kubectl rollout status deployment/${IMAGE_NAME} -n shared
+```
+
+## Best Practices
+
+### For start.sh
+1. Always use `set -e` to exit on errors
+2. Navigate to script directory using `cd "$(dirname "$0")"`
+3. Clean old logs before starting
+4. Verify development environment
+5. Install/update dependencies automatically
+6. Load environment variables from .env if present
+7. Set appropriate PYTHONPATH or other environment variables
+8. Provide clear output for debugging
+
+### For deploy.sh
+1. Use cleanup trap to remove temporary files
+2. Build for correct architecture (linux/amd64)
+3. Set appropriate memory limits for Docker builds
+4. Filter sensitive data from ConfigMaps
+5. Use kubectl dry-run for ConfigMap updates
+6. Handle image transfer and import efficiently
+7. Wait for deployments to complete
+8. Provide useful deployment status and access information
+
+### Security Considerations
+1. Never commit sensitive data in scripts
+2. Use environment variables for credentials
+3. Filter sensitive data when creating ConfigMaps
+4. Use appropriate permissions for script files
+5. Clean up temporary files containing sensitive data
+
+### Error Handling
+1. Use `set -e` to stop on errors
+2. Add cleanup traps
+3. Provide clear error messages
+4. Check for required tools and dependencies
+5. Validate environment variables
+6. Handle network timeouts and retries
+
+### Deployment Verification
+1. Check deployment status
+2. Verify pod health
+3. Test service accessibility
+4. Check logs for errors
+5. Monitor resource usage
+
+## Example Usage
+```bash
+# Local development
+./start.sh
+
+# Deploy to home server
+./deploy.sh
+```
+
+## Common Issues and Solutions
+1. Permission denied
+   ```bash
+   chmod +x start.sh deploy.sh
+   ```
+
+2. Docker build fails
+   ```bash
+   # Increase memory limit
+   --memory 6g
+   ```
+
+3. Image transfer timeout
+   ```bash
+   # Add timeout to scp/ssh commands
+   sshpass -p "${REMOTE_PASS}" timeout 300 scp ...
+   ```
+
+4. Deployment stuck
+   ```bash
+   # Check pod events
+   kubectl describe pod -n shared -l app=your-app
+   ``` 
