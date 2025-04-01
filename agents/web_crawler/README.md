@@ -147,9 +147,6 @@ Request body:
   "max_total_time": 60,
   "max_concurrent_pages": 5,
   "memory_threshold": 80.0,
-  "storage_redis": true,
-  "storage_postgres": true,
-  "debug": false,
   "headless": true,
   "viewport_width": 1920,
   "viewport_height": 1080

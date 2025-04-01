@@ -3,14 +3,12 @@ FastAPI application for the web crawler.
 """
 
 import asyncio
-from typing import List, Optional
+from api.models import CrawlRequest, CrawlResponse, CrawlResult
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from loguru import logger
 import os
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 
 from core import WebCrawlerAgent, CrawlerSettings
 
@@ -121,96 +119,6 @@ async def startup_event():
     # Start cleanup task
     asyncio.create_task(cleanup_task())
     logger.info("Web crawler API initialization complete")
-
-class CrawlRequest(BaseModel):
-    """Request model for crawling URLs."""
-    urls: List[str] = Field(
-        ...,
-        description="List of URLs to crawl",
-        example=["https://example.com", "https://example.org"]
-    )
-    max_pages: Optional[int] = Field(
-        default=10000,
-        gt=0,
-        description="Maximum number of pages to crawl",
-        example=100
-    )
-    max_depth: Optional[int] = Field(
-        default=20,
-        gt=0,
-        description="Maximum depth to crawl",
-        example=3
-    )
-    allowed_domains: Optional[List[str]] = Field(
-        default=None,
-        description="List of allowed domains to crawl",
-        example=["example.com", "example.org"]
-    )
-    exclude_patterns: Optional[List[str]] = Field(
-        default=None,
-        description="List of URL patterns to exclude",
-        example=["/login", "/admin"]
-    )
-    respect_robots: Optional[bool] = Field(
-        default=False,
-        description="Whether to respect robots.txt rules",
-        example=True
-    )
-    timeout: Optional[int] = Field(
-        default=180000,
-        gt=0,
-        description="Timeout in milliseconds for each request",
-        example=30000
-    )
-    max_total_time: Optional[int] = Field(
-        default=300,
-        gt=0,
-        description="Maximum total time in seconds for the crawl",
-        example=60
-    )
-    max_concurrent_pages: Optional[int] = Field(
-        default=10,
-        gt=0,
-        description="Maximum number of concurrent pages to crawl",
-        example=5
-    )
-    memory_threshold: Optional[float] = Field(
-        default=80.0,
-        gt=0.0,
-        lt=100.0,
-        description="Memory threshold percentage",
-        example=80.0
-    )
-    storage_redis: Optional[bool] = Field(
-        default=False,
-        description="Whether to store results in Redis",
-        example=True
-    )
-    storage_postgres: Optional[bool] = Field(
-        default=False,
-        description="Whether to store results in PostgreSQL",
-        example=True
-    )
-    debug: Optional[bool] = Field(
-        default=False,
-        description="Enable debug logging",
-        example=True
-    )
-
-class CrawlResult(BaseModel):
-    """Model for individual crawl results."""
-    url: str
-    title: Optional[str]
-    text: str
-    links: List[str]
-    metadata: dict
-
-class CrawlResponse(BaseModel):
-    """Response model for crawl endpoint."""
-    results: List[CrawlResult]
-    total_urls: int
-    crawled_urls: int
-    elapsed_time: float
 
 @app.post("/crawl", response_model=CrawlResponse)
 async def crawl(request: CrawlRequest):

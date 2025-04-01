@@ -108,7 +108,6 @@ POST /crawl
   "timeout": 30000,
   "max_total_time": 60,
   "max_concurrent_pages": 5,
-  "debug": false,
   "headless": true,
   "viewport_width": 1920,
   "viewport_height": 1080

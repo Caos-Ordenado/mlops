@@ -5,141 +5,91 @@ Pydantic models for the web crawler API.
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
+
 class CrawlRequest(BaseModel):
     """Request model for crawling URLs."""
     urls: List[str] = Field(
         ...,
         description="List of URLs to crawl",
-        example=["https://ai.pydantic.dev/api/", "https://ai.pydantic.dev/examples/"]
+        example=["https://example.com", "https://example.org"]
     )
     max_pages: Optional[int] = Field(
         default=10000,
-        description="Maximum number of pages to crawl (from CRAWLER_MAX_PAGES)",
         gt=0,
-        example=10
+        description="Maximum number of pages to crawl",
+        example=100
     )
     max_depth: Optional[int] = Field(
         default=20,
-        description="Maximum crawl depth (from CRAWLER_MAX_DEPTH)",
         gt=0,
-        example=2
+        description="Maximum depth to crawl",
+        example=3
     )
     allowed_domains: Optional[List[str]] = Field(
         default=None,
-        description="List of allowed domains to crawl. If None, any domain is allowed",
-        example=["ai.pydantic.dev"]
+        description="List of allowed domains to crawl",
+        example=["example.com", "example.org"]
     )
     exclude_patterns: Optional[List[str]] = Field(
         default=None,
-        description="List of URL patterns to exclude from crawling",
-        example=["*.pdf", "/static/*"]
+        description="List of URL patterns to exclude",
+        example=["/login", "/admin"]
     )
     respect_robots: Optional[bool] = Field(
         default=False,
-        description="Whether to respect robots.txt (from CRAWLER_RESPECT_ROBOTS)",
+        description="Whether to respect robots.txt rules",
         example=True
     )
     timeout: Optional[int] = Field(
         default=180000,
-        description="Request timeout in milliseconds (from CRAWLER_TIMEOUT)",
         gt=0,
-        example=30000
+        description="Timeout in milliseconds for each request",
+        example=180000
     )
     max_total_time: Optional[int] = Field(
         default=300,
-        description="Maximum total crawling time in seconds (from CRAWLER_MAX_TOTAL_TIME)",
         gt=0,
-        example=60
+        description="Maximum total time in seconds for the crawl",
+        example=300
     )
     max_concurrent_pages: Optional[int] = Field(
         default=10,
-        description="Maximum number of pages to crawl concurrently (from CRAWLER_MAX_CONCURRENT_PAGES)",
         gt=0,
+        description="Maximum number of concurrent pages to crawl",
         example=5
     )
-    user_agent: Optional[str] = Field(
-        default="Mozilla/5.0 (compatible; WebCrawlerAgent/1.0)",
-        description="Custom User-Agent string for requests",
-        example="Mozilla/5.0 (compatible; WebCrawlerAgent/1.0)"
-    )
-    headless: Optional[bool] = Field(
-        default=True,
-        description="Whether to run browser in headless mode (from CRAWLER_HEADLESS)",
-        example=True
-    )
-    viewport_width: Optional[int] = Field(
-        default=1920,
-        description="Browser viewport width (from CRAWLER_VIEWPORT_WIDTH)",
-        gt=0,
-        example=1920
-    )
-    viewport_height: Optional[int] = Field(
-        default=1080,
-        description="Browser viewport height (from CRAWLER_VIEWPORT_HEIGHT)",
-        gt=0,
-        example=1080
-    )
-    debug: Optional[bool] = Field(
-        default=False,
-        description="Enable debug logging",
-        example=False
-    )
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "urls": ["https://ai.pydantic.dev/api/"],
-                "max_pages": 10,
-                "max_depth": 2,
-                "respect_robots": True,
-                "timeout": 30000,
-                "max_concurrent_pages": 5
-            }
-        }
-
 class CrawlResult(BaseModel):
     """Model for individual crawl results."""
-    url: str = Field(..., description="The URL that was crawled")
-    success: bool = Field(..., description="Whether the crawl was successful")
-    data: Dict[str, Any] = Field(
-        ..., 
-        description="""The crawled data including:
-        - html: Raw HTML content
-        - text: Extracted text content
-        - links: List of discovered URLs
-        - title: Page title
-        - metadata: Additional metadata"""
-    )
+    url: str
+    title: Optional[str]
+    text: str
+    links: List[str]
+    metadata: dict
 
 class CrawlResponse(BaseModel):
-    """Response model for the crawl endpoint."""
-    status: str = Field(
-        ..., 
-        description="Status of the crawl operation",
-        example="success"
-    )
-    results: List[CrawlResult] = Field(
-        ..., 
-        description="List of crawl results for each URL"
-    )
+    """Response model for crawl endpoint."""
+    results: List[CrawlResult]
+    total_urls: int
+    crawled_urls: int
+    elapsed_time: float
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "status": "success",
-                "results": [{
-                    "url": "https://ai.pydantic.dev/api/",
-                    "success": True,
-                    "data": {
-                        "html": "<!DOCTYPE html>...",
-                        "text": "Welcome to Pydantic AI...",
-                        "links": ["https://ai.pydantic.dev/examples/"],
-                        "title": "Pydantic AI Documentation",
-                        "metadata": {
-                            "description": "AI-powered data validation",
-                            "author": "Pydantic team"
-                        }
+class Config:
+    json_schema_extra = {
+        "example": {
+            "status": "success",
+            "results": [{
+                "url": "https://ai.pydantic.dev/api/",
+                "success": True,
+                "data": {
+                    "html": "<!DOCTYPE html>...",
+                    "text": "Welcome to Pydantic AI...",
+                    "links": ["https://ai.pydantic.dev/examples/"],
+                    "title": "Pydantic AI Documentation",
+                    "metadata": {
+                        "description": "AI-powered data validation",
+                        "author": "Pydantic team"
                     }
-                }]
-            }
-        } 
+                }
+            }]
+        }
+    } 
