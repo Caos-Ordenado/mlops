@@ -1,0 +1,21 @@
+---
+description: Security rules and configurations for the home server setup
+globs: 
+alwaysApply: true
+---
+# Security Rules
+- Always use the newest traefik versions, middlewares, api paths, configmaps or everything related. Dont suggest old ways to implement. You can check the internet to get the latest information on how to or these versions.
+- Always have in mind that when accessing through my mac i wont use TLS or HTTPS.
+- Everytime you do a curl, ping, psql ,connect to a database or try connectivity issues, you should add a timeout of 20 seconds to the request.
+from my mac nor password as it is already configured.
+- If you need to interact with the k8s cluster, just use kubectl
+- Traefik has exposed 2 ports 8080 admin and 9080 which is the public one
+
+# Secrets Management
+- All secrets are managed through the secrets management system in k8s/secrets/
+- Use the generate-secrets.sh script for creating new secrets
+- Never commit actual secret values to git
+- Use strong passwords and encryption keys
+- Rotate secrets regularly
+- Use separate secrets for different environments
+- Always use base64 encoding for secret values 

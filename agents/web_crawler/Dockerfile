@@ -2,11 +2,27 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Copy the source code
-COPY . .
+# Set pip cache directory and other optimizations
+ENV PIP_NO_CACHE_DIR=false \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DEFAULT_TIMEOUT=100
 
-# Install the package in development mode
-RUN pip install -e .
+# Copy only requirements first to leverage Docker cache
+COPY requirements.txt .
+
+# Install dependencies with pip cache
+RUN pip install --cache-dir=/root/.pip-cache -r requirements.txt && \
+    rm -rf /root/.cache/pip/*
+
+# Now copy the rest of the application
+COPY src/ src/
+COPY setup.py .
+COPY README.md .
+
+# Install the package
+RUN pip install --cache-dir=/root/.pip-cache -e . && \
+    rm -rf /root/.cache/pip/*
 
 # Set the working directory to src
 WORKDIR /app/src

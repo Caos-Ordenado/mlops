@@ -1,0 +1,10 @@
+---
+description: Traefik-specific configurations and rules
+globs: 
+alwaysApply: true
+---
+# Special Rules for Traefik
+- When you see CRDs problem on traefik logs, ignore them if these are warnings related to TCP or UDP unless we start using them
+- Avoid NodePorts entirely, use path based routing to the pods matching ports as expected.
+- Use the latest Traefik middlewares and configurations
+- Follow Traefik's best practices for ingress routes and middleware configuration

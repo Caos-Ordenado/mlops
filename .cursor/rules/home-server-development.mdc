@@ -1,0 +1,20 @@
+---
+description: Development workflow, monitoring, and planned features
+globs: 
+alwaysApply: true
+---
+# Planned Features
+- Cloudflare tunnel integration for internet exposure of selected pods
+- RAG (Retrieval-Augmented Generation) system implementation. Im analyzing to use CAG (Cache-Agumented Generation) instead
+
+
+# Installed 
+
+
+# Built Agents
+- Web scraping agent using crawl4ai library
+  - Memory-adaptive crawling with configurable threshold (default: 80%)
+  - Memory usage logging controlled via CRAWLER_DEBUG environment variable
+  - Optimized to minimize overhead when memory logging is disabled
+  - Logs memory usage at key points (initialization, crawling, storage operations)
+  - Can be used alongside different logging levels for other components

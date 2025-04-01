@@ -25,36 +25,29 @@ spec:
           limits:
             cpu: 200m
             memory: 512Mi
+        envFrom:
+        - configMapRef:
+            name: web-crawler-config
         env:
-        - name: CRAWLER_DEBUG
-          value: "false"
-        - name: CRAWLER_MAX_PAGES
-          value: "10000"
-        - name: CRAWLER_MAX_DEPTH
-          value: "20"
-        - name: CRAWLER_TIMEOUT
-          value: "180000"
-        - name: CRAWLER_MAX_CONCURRENT_PAGES
-          value: "10"
-        - name: CRAWLER_MEMORY_THRESHOLD
-          value: "80.0"
-        - name: CRAWLER_RESPECT_ROBOTS
-          value: "false"
-        - name: CRAWLER_STORAGE_REDIS
-          value: "false"
-        - name: CRAWLER_STORAGE_POSTGRES
-          value: "false"
-        - name: POSTGRES_HOST
-          value: postgres.shared.svc.cluster.local
-        - name: POSTGRES_PORT
-          value: "5432"
-        - name: POSTGRES_DB
-          value: web_crawler
+        # PostgreSQL credentials from existing secret
         - name: POSTGRES_USER
-          value: admin
-        - name: REDIS_HOST
-          value: redis.shared.svc.cluster.local
-        - name: REDIS_PORT
-          value: "6379"
-        - name: REDIS_DB
-          value: "0" 
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_DB
+        # Redis credentials from existing secret
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: redis-password

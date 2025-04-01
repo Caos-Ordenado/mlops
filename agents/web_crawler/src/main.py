@@ -13,9 +13,11 @@ def setup_logging():
     """Configure logging."""
     logger.add(
         "crawler.log",
-        rotation="500 MB",
-        retention="10 days",
-        level="INFO" if not os.getenv("CRAWLER_DEBUG", "false").lower() == "true" else "DEBUG"
+        rotation="100 MB",
+        retention="5 days",
+        compression="zip",
+        level=os.getenv("CRAWLER_LOG_LEVEL", "DEBUG"),
+        enqueue=True  # Thread-safe logging
     )
 
 async def run_example():
@@ -27,7 +29,7 @@ async def run_example():
         max_pages=int(os.getenv("CRAWLER_MAX_PAGES", "10")),
         max_depth=int(os.getenv("CRAWLER_MAX_DEPTH", "2")),
         respect_robots=os.getenv("CRAWLER_RESPECT_ROBOTS", "true").lower() == "true",
-        timeout=int(os.getenv("CRAWLER_TIMEOUT", "30000")),
+        timeout=int(os.getenv("CRAWLER_TIMEOUT", "180000")),
         max_total_time=int(os.getenv("CRAWLER_MAX_TOTAL_TIME", "60")),
         max_concurrent_pages=int(os.getenv("CRAWLER_MAX_CONCURRENT_PAGES", "5")),
         memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0"))

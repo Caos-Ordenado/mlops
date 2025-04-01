@@ -1,0 +1,55 @@
+---
+description: Infrastructure components and currently running services
+globs: 
+alwaysApply: true
+---
+# Infrastructure Components
+- MicroK8s cluster with Traefik and ArgoCD
+- Tailscale VPN for remote access
+- Cloudflare Tunnel (planned) for internet exposure
+- Shared Redis instance for caching and session management
+- Ollama for local AI model hosting
+- PostgreSQL instance for data storage in shared namespace
+
+# Currently Running Services
+These are my following pods at this moment:
+- Traefik. Also exposes the traefik dashboard on the home server. 
+  - Cluster Port: 8080
+  - Traefik Port: 8080
+  - Path /dashboard/
+  - Namespace: kube-system
+- Redis. Shared instance for caching and session management. 
+  - Cluster Port: 6379
+  - Traefik Port: 6379
+  - Namespace: shared
+- PostgreSQL. Internal database instance in shared namespace. Accessible at:
+  - Cluster Host: postgres.shared.svc.cluster.local
+  - Cluster Port: 5432
+  - Traefik Host: postgres.home.server
+  - Traefik Port: :5432
+  - Database: web_crawler
+  - User: admin
+  - Namespace: shared
+  - Currently only has public schema with test table
+- ArgoCD, Exposed by traefik. 
+  - Cluster Port: 9080
+  - Traefik Port: 80
+  - Path: /argocd
+  - Mamespace: argocd
+  - Version: 2.8.4
+  - Components:
+    - ArgoCD Server (UI and API)
+    - ArgoCD Application Controller
+    - ArgoCD Repo Server
+    - Redis instance for caching (using shared Redis)
+    - Authentication is disabled for local development
+  - User: admin
+- Ollama. Exposed by traefik. 
+  - Cluster Port: 9080
+  - Traefik Port: 80
+  - Path /ollama
+  - Namespace: default 
+  - Installed models:
+    - llama3 (8B model)
+
+  

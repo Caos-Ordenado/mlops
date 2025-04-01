@@ -40,6 +40,11 @@ def log_memory_usage(context: str, debug: bool = False):
         logger.debug(f"Memory Usage [{context}]: {memory_percent:.2f}%")
     return memory_percent
 
+def get_domain(url: str) -> str:
+    """Extract the domain from a URL."""
+    parsed = urlparse(url)
+    return parsed.netloc
+
 class CrawlerSettings(BaseModel):
     """Settings for the web crawler."""
     max_pages: int = Field(default=10000, gt=0)
@@ -212,10 +217,49 @@ class WebCrawlerAgent(BaseAgent):
         self.redis_storage = None
         self.postgres_storage = None
         if settings.storage_redis:
-            self.redis_storage = RedisStorage()
+            redis_host = os.getenv("REDIS_HOST", "localhost")
+            redis_port = int(os.getenv("REDIS_PORT", "6379"))
+            redis_db = int(os.getenv("REDIS_DB", "0"))
+            redis_password = os.getenv("REDIS_PASSWORD")
+            self.redis_storage = RedisStorage(
+                host=redis_host,
+                port=redis_port,
+                db=redis_db,
+                password=redis_password
+            )
         if settings.storage_postgres:
-            self.postgres_storage = PostgresStorage()
+            postgres_host = os.getenv("POSTGRES_HOST", "localhost")
+            postgres_port = int(os.getenv("POSTGRES_PORT", "5432"))
+            postgres_db = os.getenv("POSTGRES_DB", "web_crawler")
+            postgres_user = os.getenv("POSTGRES_USER", "admin")
+            postgres_password = os.getenv("POSTGRES_PASSWORD")
+            self.postgres_storage = PostgresStorage(
+                host=postgres_host,
+                port=postgres_port,
+                dbname=postgres_db,
+                user=postgres_user,
+                password=postgres_password
+            )
     
+    def _should_crawl_url(self, url: str) -> bool:
+        """Check if a URL should be crawled based on settings."""
+        # Skip if already processed
+        if url in self.processed_urls:
+            return False
+
+        # Check allowed domains
+        if self.settings.allowed_domains:
+            url_domain = get_domain(url)
+            if not any(url_domain == domain for domain in self.settings.allowed_domains):
+                return False
+
+        # Check exclude patterns
+        if self.settings.exclude_patterns:
+            if any(pattern in url for pattern in self.settings.exclude_patterns):
+                return False
+
+        return True
+
     async def crawl_url(self, url: str) -> Dict[str, Any]:
         """
         Crawl a single URL and return the extracted data.
@@ -227,7 +271,7 @@ class WebCrawlerAgent(BaseAgent):
             Dict containing the crawled data and metadata
         """
         try:
-            logger.info(f"Starting crawl of {url}")
+            logger.debug(f"Starting crawl of {url}")
             
             # Check memory usage before crawling
             if self.settings.debug:
@@ -268,42 +312,76 @@ class WebCrawlerAgent(BaseAgent):
                     memory_percent = psutil.Process().memory_percent()
                     logger.debug(f"Memory usage after crawling {url}: {memory_percent:.2f}%")
                 
-                logger.info(f"Completed crawl of {url}")
+                logger.debug(f"Completed crawl of {url}")
                 return data
                 
         except Exception as e:
             logger.error(f"Error crawling {url}: {str(e)}")
             raise
     
-    async def crawl_urls(self, urls: List[str]) -> List[Dict[str, Any]]:
+    async def crawl_urls(self, urls: List[str], current_depth: int = 0) -> List[Dict[str, Any]]:
         """
-        Crawl multiple URLs in parallel.
+        Crawl multiple URLs in parallel, following links up to max_depth.
         
         Args:
             urls: List of URLs to crawl
+            current_depth: Current crawl depth (internal use)
             
         Returns:
             List of dictionaries containing the crawled data
         """
+        if current_depth > self.settings.max_depth:
+            logger.info(f"Reached max depth {self.settings.max_depth}")
+            return []
+
         try:
-            logger.info(f"Starting crawl of {len(urls)} URLs")
-            self.start_time = time.time()
+            logger.debug(f"Starting crawl of {len(urls)} URLs at depth {current_depth}")
+            self.start_time = time.time() if current_depth == 0 else self.start_time
             
-            # Create tasks for each URL
-            tasks = []
+            # Filter URLs based on settings
+            filtered_urls = []
             for url in urls:
-                if url not in self.processed_urls:
-                    tasks.append(asyncio.create_task(self.crawl_url(url)))
+                if self._should_crawl_url(url):
+                    filtered_urls.append(url)
                     self.processed_urls.add(url)
+
+            # Create tasks for filtered URLs
+            tasks = []
+            semaphore = asyncio.Semaphore(self.settings.max_concurrent_pages)
             
+            async def crawl_with_semaphore(url: str) -> Dict[str, Any]:
+                async with semaphore:
+                    return await self.crawl_url(url)
+
+            remaining_slots = self.settings.max_pages - len(self.processed_urls)
+            for url in filtered_urls[:remaining_slots]:
+                tasks.append(asyncio.create_task(crawl_with_semaphore(url)))
+            
+            if not tasks:
+                return []
+
             # Wait for all tasks to complete
-            results = await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            valid_results = [r for r in results if isinstance(r, dict)]
             
-            logger.info(f"Completed crawl of {len(results)} URLs")
-            return results
+            # Check if we should continue crawling
+            if current_depth < self.settings.max_depth and len(self.processed_urls) < self.settings.max_pages:
+                # Extract all links from results
+                next_urls = []
+                for result in valid_results:
+                    next_urls.extend(result.get('links', []))
+                
+                if next_urls:
+                    logger.debug(f"Found {len(next_urls)} new URLs at depth {current_depth}")
+                    # Recursively crawl next level
+                    next_results = await self.crawl_urls(next_urls, current_depth + 1)
+                    valid_results.extend(next_results)
+            
+            logger.info(f"Completed crawl of {len(valid_results)} URLs at depth {current_depth}")
+            return valid_results
             
         except Exception as e:
-            logger.error(f"Error during crawl: {str(e)}")
+            logger.error(f"Error during crawl at depth {current_depth}: {str(e)}")
             raise
     
     async def __aenter__(self):

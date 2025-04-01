@@ -2,8 +2,7 @@
 .history/
 
 .venv/
-.cursor/
-.cursor/
+.cursor/rules/rules-for-passwords.mdc
 
 .DS_Store
 home-server.mdc

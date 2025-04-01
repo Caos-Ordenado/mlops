@@ -1,0 +1,52 @@
+---
+description: File structure and locations of key configuration files
+globs: 
+alwaysApply: true
+---
+# File Structure
+Here are my k8s files:
+
+- PostgreSQL
+[deployment.yaml](mdc:k8s/postgres/deployment.yaml)
+[ingressroute.yaml](mdc:k8s/postgres/ingressroute.yaml)
+[kustomization.yaml](mdc:k8s/postgres/kustomization.yaml)
+[pvc.yaml](mdc:k8s/postgres/pvc.yaml)
+[service.yaml](mdc:k8s/postgres/service.yaml)
+
+- ArgoCD
+[configmaps.yaml](mdc:k8s/argocd/configmaps.yaml)
+[crds.yaml](mdc:k8s/argocd/crds.yaml)
+[deployments.yaml](mdc:k8s/argocd/deployments.yaml)
+[ingress.yaml](mdc:k8s/argocd/ingress.yaml)
+[kustomization.yaml](mdc:k8s/argocd/kustomization.yaml)
+[middleware.yaml](mdc:k8s/argocd/middleware.yaml)
+[namespace.yaml](mdc:k8s/argocd/namespace.yaml)
+[rbac.yaml](mdc:k8s/argocd/rbac.yaml)
+[services.yaml](mdc:k8s/argocd/services.yaml)
+
+- Ollama
+[deployment.yaml](mdc:k8s/ollama/deployment.yaml)
+[ingress.yaml](mdc:k8s/ollama/ingress.yaml)
+[kustomization.yaml](mdc:k8s/ollama/kustomization.yaml)
+[pvc.yaml](mdc:k8s/ollama/pvc.yaml)
+[service.yaml](mdc:k8s/ollama/service.yaml)
+
+- Traefik
+[config.yaml](mdc:k8s/traefik/config.yaml)
+[crds.yml](mdc:k8s/traefik/crds.yml)
+[dashboard-ingressroute.yml](mdc:k8s/traefik/dashboard-ingressroute.yml)
+[dashboard-middleware.yml](mdc:k8s/traefik/dashboard-middleware.yml)
+[deployment.yaml](mdc:k8s/traefik/deployment.yaml)
+[ingressclass.yml](mdc:k8s/traefik/ingressclass.yml)
+[middleware.yaml](mdc:k8s/traefik/middleware.yaml)
+[rbac.yml](mdc:k8s/traefik/rbac.yml)
+[service.yaml](mdc:k8s/traefik/service.yaml)
+
+- Secrets Management
+[README.md](mdc:k8s/secrets/README.md)
+[generate-secrets.sh](mdc:k8s/secrets/scripts/generate-secrets.sh)
+[argocd.template.yaml](mdc:k8s/secrets/templates/argocd.template.yaml)
+[redis.template.yaml](mdc:k8s/secrets/templates/redis.template.yaml)
+
+- Configuration files for microk8s
+[kustomization.yaml](mdc:k8s/kustomization.yaml) 

@@ -2,7 +2,8 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from loguru import logger
-from crawler import WebCrawlerAgent, CrawlerSettings
+from core.crawler import WebCrawlerAgent
+from core.models import CrawlerSettings
 
 # Load environment variables
 load_dotenv()
@@ -13,7 +14,8 @@ async def main():
         "crawler.log",
         rotation="500 MB",
         retention="10 days",
-        level="INFO"
+        level=os.getenv("CRAWLER_LOG_LEVEL", "DEBUG"),
+        enqueue=True  # Thread-safe logging
     )
     
     # Initialize crawler settings
@@ -24,7 +26,8 @@ async def main():
         timeout=int(os.getenv("CRAWLER_TIMEOUT", "180000")),
         max_total_time=int(os.getenv("CRAWLER_MAX_TOTAL_TIME", "300")),
         max_concurrent_pages=int(os.getenv("CRAWLER_MAX_CONCURRENT_PAGES", "10")),
-        memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0"))
+        memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0")),
+        storage_redis=os.getenv("CRAWLER_STORAGE_REDIS", "True")
     )
     
     # URLs to crawl

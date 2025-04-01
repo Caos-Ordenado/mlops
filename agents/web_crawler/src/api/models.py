@@ -57,13 +57,6 @@ class CrawlRequest(BaseModel):
         gt=0,
         example=5
     )
-    memory_threshold: Optional[float] = Field(
-        default=80.0,
-        description="Memory usage threshold percentage to pause crawling (from CRAWLER_MEMORY_THRESHOLD)",
-        gt=0.0,
-        lt=100.0,
-        example=80.0
-    )
     user_agent: Optional[str] = Field(
         default="Mozilla/5.0 (compatible; WebCrawlerAgent/1.0)",
         description="Custom User-Agent string for requests",
@@ -86,6 +79,11 @@ class CrawlRequest(BaseModel):
         gt=0,
         example=1080
     )
+    debug: Optional[bool] = Field(
+        default=False,
+        description="Enable debug logging",
+        example=False
+    )
 
     class Config:
         json_schema_extra = {
@@ -95,8 +93,7 @@ class CrawlRequest(BaseModel):
                 "max_depth": 2,
                 "respect_robots": True,
                 "timeout": 30000,
-                "max_concurrent_pages": 5,
-                "memory_threshold": 80.0
+                "max_concurrent_pages": 5
             }
         }
 

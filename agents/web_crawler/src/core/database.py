@@ -19,7 +19,7 @@ class Database:
                 dbname="web_crawler",
                 user="admin",
                 password=os.getenv("POSTGRES_PASSWORD", "admin"),
-                host=os.getenv("POSTGRES_HOST", "home.server"),
+                host=os.getenv("POSTGRES_HOST", "localhost"),
                 port=os.getenv("POSTGRES_PORT", "5432")
             )
             logger.info("Successfully connected to PostgreSQL database")

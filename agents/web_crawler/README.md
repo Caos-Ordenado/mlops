@@ -74,45 +74,55 @@ web_crawler/
 
 ## Environment Variables
 
-### Crawler Settings
-- `CRAWLER_MAX_PAGES`: Maximum number of pages to crawl (default: 10000)
-- `CRAWLER_MAX_DEPTH`: Maximum crawl depth (default: 20)
-- `CRAWLER_TIMEOUT`: Timeout in milliseconds (default: 180000)
-- `CRAWLER_MAX_TOTAL_TIME`: Maximum total crawling time in seconds (default: 300)
-- `CRAWLER_MAX_CONCURRENT_PAGES`: Maximum number of pages to crawl concurrently (default: 10)
-- `CRAWLER_MEMORY_THRESHOLD`: Memory threshold percentage for adaptive crawling (default: 80.0)
-- `CRAWLER_USER_AGENT`: Custom user agent string
-- `CRAWLER_RESPECT_ROBOTS`: Whether to respect robots.txt (default: false)
-- `CRAWLER_DEBUG`: Enable debug logging (default: false)
+### Core Settings
+```env
+CRAWLER_MAX_PAGES=10000
+CRAWLER_MAX_DEPTH=20
+CRAWLER_TIMEOUT=180000
+CRAWLER_MAX_TOTAL_TIME=300
+CRAWLER_MAX_CONCURRENT_PAGES=10
+CRAWLER_MEMORY_THRESHOLD=80.0
+CRAWLER_USER_AGENT=custom_agent
+CRAWLER_RESPECT_ROBOTS=false
+CRAWLER_DEBUG=false
+CRAWLER_LOG_LEVEL=INFO
+CRAWLER_CLEANUP_INTERVAL_HOURS=24
+CRAWLER_DATA_RETENTION_DAYS=30
+CRAWLER_ALLOWED_DOMAINS=example.com,ai.pydantic.dev
+CRAWLER_EXCLUDE_PATTERNS=*.pdf,*.jpg,*.png,*.gif,*.zip,*.doc,*.docx,*.xls,*.xlsx,*.ppt,*.pptx
+CRAWLER_HEADLESS=true
+CRAWLER_VIEWPORT_HEIGHT=1080
+CRAWLER_VIEWPORT_WIDTH=1920
+```
 
 ### Storage Settings
-- `CRAWLER_STORAGE_POSTGRES`: Enable PostgreSQL storage (default: false)
-- `CRAWLER_STORAGE_REDIS`: Enable Redis storage (default: false)
-
-### Database Configuration
-#### PostgreSQL
-- `POSTGRES_HOST`: PostgreSQL host address
-- `POSTGRES_PORT`: PostgreSQL port (default: 5432)
-- `POSTGRES_USER`: Database user
-- `POSTGRES_PASSWORD`: Database password
-- `POSTGRES_DB`: Database name
-
-#### Redis
-- `REDIS_HOST`: Redis host address (default: localhost)
-- `REDIS_PORT`: Redis port (default: 6379)
-- `REDIS_DB`: Redis database number (default: 0)
-
-## Usage
+```env
+CRAWLER_STORAGE_POSTGRES=true
+CRAWLER_STORAGE_REDIS=true
+POSTGRES_HOST=postgres.shared.svc.cluster.local
+POSTGRES_PORT=5432
+POSTGRES_USER=admin
+POSTGRES_DB=web_crawler
+REDIS_HOST=redis.shared.svc.cluster.local
+REDIS_PORT=6379
+REDIS_DB=0
+```
 
 ### Running the FastAPI Server
 
-```bash
-# Start the server
-python src/main.py
+The project includes a `start.sh` script that handles environment setup and server startup:
 
-# Or run the example crawler
-python src/main.py example
+```bash
+# Start the server using the script
+./start.sh
 ```
+
+The script will:
+1. Clean the crawler.log file
+2. Verify Python version and virtual environment
+3. Install/update requirements
+4. Load environment variables
+5. Start the FastAPI server
 
 The FastAPI server will be available at:
 - API: http://localhost:8000
@@ -131,15 +141,18 @@ Request body:
   "max_pages": 100,
   "max_depth": 3,
   "allowed_domains": ["example.com"],
-  "exclude_patterns": ["/login", "/admin"],
+  "exclude_patterns": ["*.pdf", "*.jpg", "*.png", "*.gif", "*.zip"],
   "respect_robots": true,
   "timeout": 30000,
   "max_total_time": 60,
   "max_concurrent_pages": 5,
   "memory_threshold": 80.0,
-  "storage_redis": false,
-  "storage_postgres": false,
-  "debug": false
+  "storage_redis": true,
+  "storage_postgres": true,
+  "debug": false,
+  "headless": true,
+  "viewport_width": 1920,
+  "viewport_height": 1080
 }
 ```
 
@@ -151,6 +164,7 @@ Response:
       "url": "https://example.com",
       "title": "Example Domain",
       "text": "...",
+      "html": "...",
       "links": ["https://example.com/page1", "..."],
       "metadata": {
         "status_code": 200,
@@ -162,7 +176,11 @@ Response:
   ],
   "total_urls": 1,
   "crawled_urls": 1,
-  "elapsed_time": 0.211
+  "elapsed_time": 0.211,
+  "memory_usage": {
+    "current": 45.2,
+    "peak": 52.8
+  }
 }
 ```
 
@@ -176,31 +194,9 @@ Response:
 }
 ```
 
-### Using the Core Library
-
-```python
-from core import WebCrawlerAgent, CrawlerSettings
-
-# Configure crawler settings
-settings = CrawlerSettings(
-    max_pages=10,
-    max_depth=2,
-    timeout=30000,
-    memory_threshold=80.0,
-    storage_redis=True
-)
-
-# Initialize and run crawler
-async with WebCrawlerAgent(settings) as crawler:
-    results = await crawler.crawl_urls([
-        "https://example.com",
-        "https://example.org"
-    ])
-```
-
 ## Output and Logging
 
-The crawler provides detailed output in two ways:
+The crawler provides detailed output with configurable logging levels:
 
 1. Console Output:
    - Shows real-time progress of the crawl
@@ -208,10 +204,11 @@ The crawler provides detailed output in two ways:
    - Shows any errors or issues during crawling
 
 2. Log File (`crawler.log`):
-   - Contains detailed logging information
+   - Contains detailed logging information based on LOG_LEVEL
    - Includes timestamps for each operation
-   - Shows full crawl results
-   - Log file rotates at 500MB to prevent disk space issues
+   - Shows full crawl results and memory usage when debug is enabled
+   - Log file is cleaned on each server start
+   - Available log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 ## Development
 
@@ -235,60 +232,48 @@ MIT License
 - `sshpass` installed (`brew install sshpass` on macOS)
 
 ### Automated Deployment
-The project includes a deployment script that automates the entire process of building and deploying the web crawler to your Kubernetes cluster.
+The project includes a `deploy.sh` script that automates the entire process:
 
-To deploy:
 ```bash
 # From the web_crawler directory
 ./deploy.sh
 ```
 
 The script will:
-1. Build the Docker image for the correct architecture
-2. Transfer the image to your home server
-3. Import it into microk8s
-4. Apply the Kubernetes configurations
-5. Wait for the deployment to complete
+1. Create ConfigMap from your .env file (excluding sensitive data)
+2. Build the Docker image for AMD64 architecture
+3. Transfer the image to your home server
+4. Import it into microk8s
+5. Apply Kubernetes configurations
+6. Force a rollout restart
+7. Wait for deployment completion
 
 After deployment, the web crawler will be accessible at:
 - API Endpoint: `http://home.server/crawler/`
 - Swagger UI: `http://home.server/crawler/docs`
 - ReDoc UI: `http://home.server/crawler/redoc`
 
-### Manual Deployment
-If you need to deploy manually or customize the deployment process:
+### Storage Configuration
 
-1. Build the Docker image:
-```bash
-docker build --platform linux/amd64 -t web-crawler:latest .
-```
+The web crawler uses two storage backends:
 
-2. Save and transfer the image:
-```bash
-docker save web-crawler:latest -o /tmp/web-crawler.tar
-scp /tmp/web-crawler.tar caos@internal-vpn-address:/tmp/
-```
+#### PostgreSQL
+Available in the shared namespace:
+- Inside cluster: `postgres.shared.svc.cluster.local:5432`
+- Database: `web_crawler`
+- User: `admin`
 
-3. Import into microk8s:
-```bash
-ssh caos@internal-vpn-address "echo '***REMOVED***' | sudo -S microk8s ctr image import /tmp/web-crawler.tar"
-```
+When using PostgreSQL storage:
+- Set `CRAWLER_STORAGE_POSTGRES=true`
+- Use the correct service DNS name
+- Check database connectivity before crawling large sites
 
-4. Apply Kubernetes configurations:
-```bash
-kubectl apply -k ../../k8s/web_crawler
-```
+#### Redis
+Available in the shared namespace:
+- Inside cluster: `redis.shared.svc.cluster.local:6379`
 
-### Monitoring
-To monitor the deployment:
-```bash
-# Check pod status
-kubectl get pods -n shared -l app=web-crawler
-
-# Check logs
-kubectl logs -n shared -l app=web-crawler --tail=100
-
-# Check the deployment status
-kubectl describe deployment -n shared web-crawler
-```
+When using Redis storage:
+- Set `CRAWLER_STORAGE_REDIS=true`
+- Use the correct service DNS name
+- Monitor Redis memory usage for large crawls
 """ 

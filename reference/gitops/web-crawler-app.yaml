@@ -6,8 +6,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/fabian/mlops.git  # Replace with your actual repository URL
-    targetRevision: HEAD
+    repoURL: https://github.com/Caos-Ordenado/mlops.git
+    targetRevision: main
     path: k8s/web_crawler
   destination:
     server: https://kubernetes.default.svc
