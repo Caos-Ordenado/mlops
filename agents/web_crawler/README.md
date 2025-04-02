@@ -137,66 +137,7 @@ The FastAPI server will be available at:
 - ReDoc UI: http://localhost:8000/redoc
 
 ### API Endpoints
-
-#### POST /crawl
-Crawl specified URLs with configurable settings.
-
-Request body:
-```json
-{
-  "urls": ["https://example.com"],
-  "max_pages": 100,
-  "max_depth": 3,
-  "allowed_domains": ["example.com"],
-  "exclude_patterns": ["*.pdf", "*.jpg", "*.png", "*.gif", "*.zip"],
-  "respect_robots": true,
-  "timeout": 30000,
-  "max_total_time": 60,
-  "max_concurrent_pages": 5,
-  "memory_threshold": 80.0,
-  "headless": true,
-  "viewport_width": 1920,
-  "viewport_height": 1080
-}
-```
-
-Response:
-```json
-{
-  "results": [
-    {
-      "url": "https://example.com",
-      "title": "Example Domain",
-      "text": "...",
-      "html": "...",
-      "links": ["https://example.com/page1", "..."],
-      "metadata": {
-        "status_code": 200,
-        "headers": {},
-        "content_type": "text/html",
-        "timestamp": 1743511218.223563
-      }
-    }
-  ],
-  "total_urls": 1,
-  "crawled_urls": 1,
-  "elapsed_time": 0.211,
-  "memory_usage": {
-    "current": 45.2,
-    "peak": 52.8
-  }
-}
-```
-
-#### GET /health
-Health check endpoint.
-
-Response:
-```json
-{
-  "status": "ok"
-}
-```
+ - Check openapi.json
 
 ## Output and Logging
 

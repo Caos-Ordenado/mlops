@@ -145,6 +145,7 @@ async def crawl(request: CrawlRequest):
         storage_redis = os.getenv("CRAWLER_STORAGE_REDIS", "false").lower() == "true"
         storage_postgres = os.getenv("CRAWLER_STORAGE_POSTGRES", "false").lower() == "true"
         memory_threshold = float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0"))
+        debug = os.getenv("CRAWLER_DEBUG", "false").lower() == "true"
         
         # Create crawler settings from request and environment
         settings = CrawlerSettings(
@@ -159,7 +160,7 @@ async def crawl(request: CrawlRequest):
             memory_threshold=memory_threshold,  # From environment
             storage_redis=storage_redis,        # From environment
             storage_postgres=storage_postgres,   # From environment
-            debug=request.debug
+            debug=debug                         # From environment
         )
         
         # Initialize and run crawler

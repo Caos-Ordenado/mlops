@@ -1,0 +1,114 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Shared Agent Utilities
+
+## Logging System
+- Uses loguru for thread-safe logging
+- Log file: `server.log`
+- Settings:
+  - Rotation: 100 MB
+  - Retention: 5 days
+  - Compression: ZIP
+  - Thread-safe with `enqueue=True`
+- Configuration via `LOG_LEVEL` environment variable
+  - Default: DEBUG
+  - Available levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+## Database Clients
+
+### Redis Client
+- Asynchronous with connection pooling
+- Environment variables:
+  - `REDIS_HOST`: home.server
+  - `REDIS_PORT`: 6379
+  - `REDIS_DB`: 0
+  - `REDIS_PASSWORD`: from secrets
+
+### PostgreSQL Client
+- Async support with connection pooling
+- Environment variables:
+  - `POSTGRES_HOST`: home.server
+  - `POSTGRES_PORT`: 5432
+  - `POSTGRES_DB`: web_crawler
+  - `POSTGRES_USER`: admin
+  - `POSTGRES_PASSWORD`: from secrets
+
+## Service Clients
+
+### Web Crawler Client
+- Base URL: http://home.server/crawler
+- Async/await interface
+- Features:
+  - Automatic session management
+  - Health checking
+  - Full parameter control
+  - Type hints and dataclasses
+  - Error handling
+
+### Ollama Client
+- Base URL: http://home.server/ollama
+- Async interface for LLM interactions
+- Default model: llama2
+
+## Best Practices
+1. Always use async context managers for clients
+2. Handle connection errors gracefully
+3. Use the shared logging configuration
+4. Follow established error handling patterns
+5. Document new features and changes
+
+## Example Usage
+
+### Logging
+```python
+from agent_utils.logging import setup_logger
+
+logger = setup_logger("my_agent")
+logger.debug("Debug message")
+logger.info("Info message")
+```
+
+### Redis
+```python
+from agent_utils import RedisClient
+
+async with RedisClient() as redis:
+    await redis.set("key", "value")
+    value = await redis.get("key")
+```
+
+### PostgreSQL
+```python
+from agent_utils import PostgresClient
+
+async with PostgresClient() as db:
+    async with db.cursor() as cur:
+        await cur.execute("SELECT * FROM my_table")
+        rows = await cur.fetchall()
+```
+
+### Web Crawler
+```python
+from agent_utils import WebCrawlerClient
+
+async with WebCrawlerClient() as client:
+    results = await client.crawl(
+        urls=["https://example.com"],
+        max_pages=5,
+        max_depth=2
+    )
+```
+
+### Ollama
+```python
+from agent_utils import OllamaClient
+
+async with OllamaClient() as llm:
+    response = await llm.generate(
+        "Your prompt here",
+        model="llama2"
+    )
+``` 

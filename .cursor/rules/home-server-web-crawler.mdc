@@ -109,7 +109,10 @@ kubectl describe deployment -n shared web-crawler
 kubectl get configmap -n shared web-crawler-config -o yaml
 ```
 ## REST API
- - Check readme for examples: [README.md](mdc:agents/web_crawler/README.md)
+ - Check the openpi definition of the service
+
+## Readme
+ - More info on [README.md](mdc:agents/web_crawler/README.md)
 
 ## Best Practices
 1. Always use the deployment script for updates

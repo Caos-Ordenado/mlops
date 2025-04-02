@@ -17,3 +17,6 @@ k8s/secrets/*.env
 .env
 *.env
 
+**/*.egg-info
+**/__pycache__
+**/dist

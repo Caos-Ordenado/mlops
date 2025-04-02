@@ -6,4 +6,5 @@ namespace: shared
 resources:
   - deployment.yaml
   - service.yaml
-  - pvc.yaml 
+  - pvc.yaml
+  - ingressroute.yaml 
