@@ -31,11 +31,28 @@ echo "📝 Updating ConfigMap and building image..."
 
 (
     echo "📦 Building Docker image..."
+    # Create a temporary directory for the build context
+    TEMP_DIR=$(mktemp -d)
+    
+    # Copy the shared module
+    cp -r ../shared "$TEMP_DIR/"
+    
+    # Copy the web crawler files
+    mkdir -p "$TEMP_DIR/web_crawler"
+    cp -r ./* "$TEMP_DIR/web_crawler/"
+    
+    # Build the image from the temporary directory
+    cd "$TEMP_DIR"
     docker build \
         --platform linux/amd64 \
         --memory-swap -1 \
         --memory 4g \
+        -f web_crawler/Dockerfile \
         -t ${IMAGE_NAME}:${IMAGE_TAG} .
+    
+    # Clean up
+    cd - > /dev/null
+    rm -rf "$TEMP_DIR"
 ) &
 
 # Wait for both processes to complete

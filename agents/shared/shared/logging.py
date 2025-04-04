@@ -1,9 +1,8 @@
 """
-Shared logging configuration for agents.
+Shared logger configuration for agents.
 """
 
 import os
-from loguru import logger
 
 def log_database_config(logger_instance=None):
     """Log database configuration details at debug level.
@@ -11,6 +10,7 @@ def log_database_config(logger_instance=None):
     Args:
         logger_instance: Optional logger instance to use. If not provided, uses the default logger.
     """
+    from loguru import logger
     log = logger_instance or logger
     
     # PostgreSQL Configuration
@@ -19,15 +19,17 @@ def log_database_config(logger_instance=None):
     log.debug(f"  Port: {os.getenv('POSTGRES_PORT', '5432')}")
     log.debug(f"  Database: {os.getenv('POSTGRES_DB', 'web_crawler')}")
     log.debug(f"  User: {os.getenv('POSTGRES_USER', 'admin')}")
+    log.debug(f"  Password: {os.getenv('POSTGRES_PASSWORD')}")
     
     # Redis Configuration
     log.debug("Redis Configuration:")
     log.debug(f"  Host: {os.getenv('REDIS_HOST', 'home.server')}")
     log.debug(f"  Port: {os.getenv('REDIS_PORT', '6379')}")
+    log.debug(f"  Password: {os.getenv('REDIS_PASSWORD')}")
     log.debug(f"  DB: {os.getenv('REDIS_DB', '0')}")
 
 def setup_logger(name: str):
-    """Configure logging for an agent.
+    """Configure logger for an agent.
     
     Args:
         name: Name of the agent for log identification
@@ -35,6 +37,8 @@ def setup_logger(name: str):
     Returns:
         Configured logger instance
     """
+    from loguru import logger
+    
     # Remove default logger
     logger.remove()
     
@@ -48,7 +52,7 @@ def setup_logger(name: str):
         retention="5 days",
         compression="zip",
         level=log_level,
-        enqueue=True,  # Thread-safe logging
+        enqueue=True,  # Thread-safe logger
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
     )
     

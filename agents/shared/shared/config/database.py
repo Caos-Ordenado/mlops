@@ -46,12 +46,4 @@ class DatabaseConfig(BaseModel):
     echo_sql: bool = Field(
         default=False,
         description="Whether to echo SQL statements"
-    )
-
-    @property
-    def postgres_url(self) -> str:
-        """Get the PostgreSQL connection URL."""
-        auth = self.postgres_user
-        if self.postgres_password:
-            auth = f"{auth}:{self.postgres_password}"
-        return f"postgresql+asyncpg://{auth}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}" 
+    ) 

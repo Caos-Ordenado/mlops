@@ -18,8 +18,6 @@ class CrawlerSettings(BaseModel):
     max_concurrent_pages: int = Field(default=10, gt=0)
     memory_threshold: float = Field(default=80.0, gt=0.0, lt=100.0)
     user_agent: str = "Mozilla/5.0 (compatible; WebCrawlerAgent/1.0)"
-    storage_redis: bool = Field(default=False)
-    storage_postgres: bool = Field(default=False)
     debug: bool = Field(default=False)
     processed_urls: Set[str] = Field(default_factory=set)
     processed_sitemaps: Set[str] = Field(default_factory=set)

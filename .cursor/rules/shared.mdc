@@ -1,0 +1,70 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Shared Agent Utilities
+
+## Logging System
+- Uses loguru for thread-safe logging
+- Log file: `server.log`
+- Settings:
+  - Rotation: 100 MB
+  - Retention: 5 days
+  - Compression: ZIP
+  - Thread-safe: `enqueue=True`
+- Configuration: `LOG_LEVEL` environment variable
+
+## Service Clients
+
+### Web Crawler Client
+- Base URL: http://home.server/crawler
+- Features:
+  - Async/await interface
+  - Health checking
+  - Type hints and dataclasses
+  - Error handling
+
+### Ollama Client
+- Base URL: http://home.server/ollama
+- Async interface for LLM interactions
+- Default model: llama2
+
+## Best Practices
+1. Use async context managers for clients
+2. Handle connection errors gracefully
+3. Use shared logging configuration
+4. Follow error handling patterns
+5. Document new features
+
+## Example Usage
+
+### Logging
+```python
+from agent_utils.logging import setup_logger
+
+logger = setup_logger("my_agent")
+logger.info("Info message")
+```
+
+### Web Crawler
+```python
+from agent_utils import WebCrawlerClient
+
+async with WebCrawlerClient() as client:
+    results = await client.crawl(
+        urls=["https://example.com"],
+        max_pages=5
+    )
+```
+
+### Ollama
+```python
+from agent_utils import OllamaClient
+
+async with OllamaClient() as llm:
+    response = await llm.generate(
+        "Your prompt here",
+        model="llama2"
+    )
+``` 

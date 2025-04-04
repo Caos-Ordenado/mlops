@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Traefik Configuration Rules
+
+## Core Rules
+- Ignore TCP/UDP CRD warnings unless needed
+- Use path-based routing instead of NodePorts
+- Use latest Traefik middlewares and configurations
+
+## Service Configuration
+- HTTP services: Use path-based routing
+- TCP services (databases):
+  - PostgreSQL: port 5432
+  - Redis: port 6379
+- No path/prefix needed for TCP services
+- No HTTP middlewares for TCP routing 

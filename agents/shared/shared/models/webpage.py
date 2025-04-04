@@ -81,7 +81,21 @@ class WebPage(Base):
             "last_updated": self.last_updated.isoformat() if self.last_updated else None,
             
             # Search optimization
-            "embedding": self.embedding
+            "embedding": self.embedding,
+            
+            # Required fields for CrawlResult
+            "text": self.full_text or self.main_content or "",
+            "metadata": {
+                "status_code": self.status_code,
+                "content_type": self.content_type,
+                "last_modified": self.last_modified.isoformat() if self.last_modified else None,
+                "content_language": self.content_language,
+                "meta_tags": self.meta_tags,
+                "headers_hierarchy": self.headers,
+                "images": self.images,
+                "structured_data": self.structured_data,
+                "main_content": self.main_content
+            }
         }
 
     @classmethod

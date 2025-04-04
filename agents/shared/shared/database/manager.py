@@ -40,10 +40,21 @@ class DatabaseManager:
             # Log database configuration before connecting
             log_database_config(logger)
             
-            self.engine = create_async_engine(
-                self.config.postgres_url,
-                echo=self.config.echo_sql
+            # Create connection string
+            connection_string = (
+                f"postgresql+asyncpg://{self.config.postgres_user}:{self.config.postgres_password}"
+                f"@{self.config.postgres_host}:{self.config.postgres_port}/{self.config.postgres_db}"
             )
+            
+            # Create engine with connection string
+            self.engine = create_async_engine(
+                connection_string,
+                echo=self.config.echo_sql,
+                pool_pre_ping=True,  # Enable connection health checks
+                pool_size=5,  # Set a reasonable pool size
+                max_overflow=10  # Allow some overflow connections
+            )
+            
             self.async_session = async_sessionmaker(
                 self.engine,
                 class_=AsyncSession,

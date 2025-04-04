@@ -1,0 +1,45 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Home Server Infrastructure Overview
+
+## Core Components
+- MicroK8s cluster on home server
+- Traefik ingress controller
+  - Admin port: 8080 (dashboard)
+  - Public port: 9080 (services)
+- Tailscale VPN for remote access
+- Host: home.server (internal-vpn-address)
+
+## Namespaces and Services
+1. kube-system:
+   - Traefik ingress controller
+
+2. shared:
+   - Redis service
+   - PostgreSQL service
+   - Web crawler service
+
+3. argocd:
+   - ArgoCD deployment (v2.8.4)
+
+4. default:
+   - Ollama LLM service
+
+## Service DNS Names
+- Redis: redis.shared.svc.cluster.local:6379
+- PostgreSQL: postgres.shared.svc.cluster.local:5432
+- HTTP services: http://home.server/<service-path>
+
+## Directory Structure
+```
+k8s/
+├── argocd/         # ArgoCD deployment
+├── shared/         # Shared infrastructure
+├── ollama/         # Ollama service
+├── secrets/        # Secret management
+├── traefik/        # Ingress controller
+└── kustomization.yaml
+``` 

@@ -1,0 +1,70 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Database Patterns
+
+## Repository Pattern
+- Each model has a repository class
+- Base repository provides CRUD operations
+- Redis used as cache layer
+- PostgreSQL as source of truth
+
+## Cache Strategy
+```python
+# Writing
+1. Save to PostgreSQL
+2. Invalidate Redis cache
+
+# Reading
+1. Try Redis first
+2. Fallback to PostgreSQL
+3. Update Redis cache
+```
+
+## Model Requirements
+- SQLAlchemy model class
+- Redis serialization methods:
+```python
+def to_redis_data(self) -> dict:
+    """Convert to Redis format"""
+
+@classmethod
+def from_redis_data(cls, data: dict) -> Self:
+    """Create from Redis data"""
+```
+
+## Repository Structure
+```python
+class ModelRepository(BaseRepository):
+    def _get_prefix(self) -> str:
+        """Redis key prefix"""
+    
+    def _get_entity_key(self, entity) -> str:
+        """Unique entity identifier"""
+    
+    def _to_redis_data(self, entity) -> dict:
+        """Use model's to_redis_data"""
+    
+    def _from_redis_data(self, data: dict) -> Model:
+        """Use model's from_redis_data"""
+```
+
+## Best Practices
+1. Use repositories for database access
+2. Handle both PostgreSQL and Redis errors
+3. Use transactions for multi-step operations
+4. Follow key naming conventions
+5. Implement proper cache invalidation
+6. Log all database operations
+
+## Cache Operations
+1. Single-entity reads: Cached
+2. Bulk operations: Not cached
+3. Search operations: Not cached
+4. List operations: Not cached
+5. Cache cleared on:
+   - Entity deletion
+   - Table truncation
+   - Manual invalidation 

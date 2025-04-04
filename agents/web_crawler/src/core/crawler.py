@@ -17,9 +17,9 @@ from bs4 import BeautifulSoup
 from .agent import BaseAgent
 import time
 import json
-from logging import setup_logger
-from database.context import DatabaseContext
-from models.webpage import WebPage
+from shared import setup_logger
+from shared.database.context import DatabaseContext
+from shared.models.webpage import WebPage
 
 # Initialize logger
 logger = setup_logger("web_crawler.core")
@@ -205,25 +205,27 @@ class CrawlerSettings(BaseModel):
 class WebCrawlerAgent(BaseAgent):
     """Agent for crawling web pages."""
     
-    def __init__(self, settings: CrawlerSettings):
+    def __init__(self, settings: CrawlerSettings, db_context: Optional[DatabaseContext] = None):
         """Initialize the web crawler agent."""
         super().__init__(settings)
         self.session = None
         self.start_time = None
-        self.db_context = None
+        self.db_context = db_context
     
     async def __aenter__(self):
         """Enter async context."""
         self.session = aiohttp.ClientSession()
-        self.db_context = DatabaseContext()
-        await self.db_context.__aenter__()
+        if not self.db_context:
+            self.db_context = DatabaseContext()
+            await self.db_context.__aenter__()
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Exit async context."""
         if self.session:
             await self.session.close()
-        if self.db_context:
+        # Only close the db_context if we created it
+        if self.db_context and not hasattr(self, '_external_db_context'):
             await self.db_context.__aexit__(exc_type, exc_val, exc_tb)
     
     async def crawl_url(self, url: str) -> Optional[Dict[str, Any]]:

@@ -35,4 +35,4 @@ pip show redis
 
 # Start the FastAPI application
 echo "Starting FastAPI server..."
-PYTHONPATH=$PYTHONPATH:$(pwd)/src python src/main.py 
+PYTHONPATH=$PYTHONPATH:$(pwd)/src:$(pwd)/../shared python src/main.py 

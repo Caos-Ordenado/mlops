@@ -7,12 +7,12 @@ from datetime import datetime, timedelta
 from sqlalchemy import select, func, text, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 import json
-import logging
+from ..logging import setup_logger
 
 from ..models.webpage import WebPage
 from .base import BaseRepository
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 class WebPageRepository(BaseRepository):
     """Repository for web pages with Redis caching."""
@@ -37,48 +37,9 @@ class WebPageRepository(BaseRepository):
         """Save webpage to PostgreSQL and invalidate Redis cache."""
         try:
             # Save to PostgreSQL
-            async with self.db.session() as session:
-                stmt = (
-                    insert(WebPage)
-                    .values(
-                        url=webpage.url,
-                        status_code=webpage.status_code,
-                        content_type=webpage.content_type,
-                        title=webpage.title,
-                        description=webpage.description,
-                        main_content=webpage.main_content,
-                        full_text=webpage.full_text,
-                        headers=webpage.headers,
-                        meta_tags=webpage.meta_tags,
-                        structured_data=webpage.structured_data,
-                        links=webpage.links,
-                        images=webpage.images,
-                        content_language=webpage.content_language,
-                        last_modified=webpage.last_modified,
-                        embedding=webpage.embedding
-                    )
-                    .on_conflict_do_update(
-                        index_elements=['url'],
-                        set_={
-                            'status_code': webpage.status_code,
-                            'content_type': webpage.content_type,
-                            'title': webpage.title,
-                            'description': webpage.description,
-                            'main_content': webpage.main_content,
-                            'full_text': webpage.full_text,
-                            'headers': webpage.headers,
-                            'meta_tags': webpage.meta_tags,
-                            'structured_data': webpage.structured_data,
-                            'links': webpage.links,
-                            'images': webpage.images,
-                            'content_language': webpage.content_language,
-                            'last_modified': webpage.last_modified,
-                            'embedding': webpage.embedding,
-                            'last_updated': datetime.now()
-                        }
-                    )
-                )
-                await session.execute(stmt)
+            async with self.db.get_session() as session:
+                # Use merge to handle both insert and update cases
+                await session.merge(webpage)
                 await session.commit()
 
             # Invalidate Redis cache if available
@@ -166,23 +127,29 @@ class WebPageRepository(BaseRepository):
     
     async def cleanup_old_pages(self, session: AsyncSession, days: int = 30) -> int:
         """Delete pages older than specified days and their cache entries."""
-        cutoff_date = datetime.now() - timedelta(days=days)
-        stmt = select(WebPage).where(WebPage.crawled_at < cutoff_date)
-        result = await session.execute(stmt)
-        old_pages = result.scalars().all()
-        
-        for page in old_pages:
-            await session.delete(page)
-            # Clean Redis cache if available
-            if self.redis:
-                try:
-                    redis_key = f"{self._get_prefix()}:{page.url}"
-                    await self.redis.delete(redis_key)
-                except Exception as e:
-                    logger.warning(f"Redis cache cleanup failed for URL {page.url}: {str(e)}")
-        
-        await session.flush()
-        return len(old_pages)
+        try:
+            cutoff_date = datetime.now() - timedelta(days=days)
+            stmt = select(WebPage).where(WebPage.crawled_at < cutoff_date)
+            result = await session.execute(stmt)
+            old_pages = result.scalars().all()
+            
+            for page in old_pages:
+                await session.delete(page)
+                # Clean Redis cache if available
+                if self.redis:
+                    try:
+                        redis_key = f"{self._get_prefix()}:{page.url}"
+                        await self.redis.delete(redis_key)
+                    except Exception as e:
+                        logger.warning(f"Redis cache cleanup failed for URL {page.url}: {str(e)}")
+            
+            await session.commit()
+            return len(old_pages)
+            
+        except Exception as e:
+            logger.error(f"Error during cleanup of old pages: {str(e)}")
+            await session.rollback()
+            return 0
     
     async def iterate_all_pages(self, session: AsyncSession, batch_size: int = 100):
         """Iterate through all pages in batches (no caching for batches)."""

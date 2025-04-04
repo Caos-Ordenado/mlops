@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Set
 import asyncio
 import os
-from logging import setup_logger
+from shared import setup_logger
 from crawl4ai import AsyncWebCrawler, CrawlResult, CrawlerRunConfig, BrowserConfig
 import aiohttp
 from .models import CrawlerSettings

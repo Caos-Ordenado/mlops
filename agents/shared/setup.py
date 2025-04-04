@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="agent_utils",
+    name="shared",
     version="0.1.0",
     description="Shared utilities for AI agents",
     author="Your Name",

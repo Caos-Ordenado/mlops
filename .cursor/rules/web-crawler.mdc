@@ -1,0 +1,41 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Web Crawler Configuration
+
+## Deployment
+- Namespace: shared
+- Service name: web-crawler
+- Path prefix: /crawler
+- Access points:
+  - API: http://home.server/crawler/
+  - Swagger UI: http://home.server/crawler/docs
+  - ReDoc UI: http://home.server/crawler/redoc
+
+## Configuration
+- Memory threshold: 80% (configurable)
+- Debug logging: CRAWLER_DEBUG environment variable
+- Storage options:
+  - Redis for caching
+  - PostgreSQL for persistence
+
+## Monitoring
+```bash
+# Status check
+kubectl get pods -n shared -l app=web-crawler
+
+# Logs
+kubectl logs -n shared -l app=web-crawler --tail=100
+
+# Configuration
+kubectl get configmap -n shared web-crawler-config -o yaml
+```
+
+## Best Practices
+1. Use deployment script for updates
+2. Monitor memory usage through debug logs
+3. Configure appropriate cleanup intervals
+4. Set proper log levels per environment
+5. Monitor storage backend health 

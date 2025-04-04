@@ -6,7 +6,7 @@ import asyncio
 from api.models import CrawlRequest, CrawlResponse, CrawlResult
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from logging import setup_logger
+from shared import setup_logger, DatabaseContext, RedisClient, DatabaseConfig
 import os
 from dotenv import load_dotenv
 
@@ -52,9 +52,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global storage instances
-redis_storage = None
-postgres_storage = None
+# Global database context
+db_context = None
 
 async def cleanup_task():
     """Background task to clean up old data."""
@@ -65,10 +64,10 @@ async def cleanup_task():
         try:
             logger.debug("Starting periodic data cleanup")
             
-            if redis_storage:
-                await redis_storage.cleanup_old_data(days=retention_days)
-            if postgres_storage:
-                await postgres_storage.cleanup_old_data(days=retention_days)
+            if db_context:
+                async with db_context.db.get_session() as session:
+                    count = await db_context.webpages.cleanup_old_pages(session, days=retention_days)
+                    logger.info(f"Cleaned up {count} old pages")
                 
             logger.debug(f"Cleanup complete. Next cleanup in {cleanup_interval} hours")
             await asyncio.sleep(cleanup_interval * 3600)  # Convert hours to seconds
@@ -79,144 +78,68 @@ async def cleanup_task():
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize storage and start background tasks on startup."""
-    global redis_storage, postgres_storage
+    """Initialize database connection and start background tasks on startup."""
+    global db_context
     
     logger.info("Initializing web crawler API...")
     
-    # Initialize storage if enabled
-    save_on_redis = os.getenv("CRAWLER_STORAGE_REDIS", "false").lower() == "true"
-    logger.debug(f"Save on redis: {save_on_redis}")
-    if save_on_redis:
-        from core.storage import RedisStorage
-        
-        # Debug log Redis configuration
-        redis_host = os.getenv("REDIS_HOST", "localhost")
-        redis_port = int(os.getenv("REDIS_PORT", "6379"))
-        redis_db = int(os.getenv("REDIS_DB", "0"))
-        redis_password = os.getenv("REDIS_PASSWORD")
-        
-        logger.debug(f"Redis Configuration:")
-        logger.debug(f"Host: {redis_host}")
-        logger.debug(f"Port: {redis_port}")
-        logger.debug(f"DB: {redis_db}")
-        logger.debug(f"Password set: {bool(redis_password)}")
-        
-        redis_storage = RedisStorage(
-            host=redis_host,
-            port=redis_port,
-            db=redis_db,
-            password=redis_password
+    # Initialize database context
+    db_context = DatabaseContext(
+        config=DatabaseConfig(
+            postgres_host=os.getenv("POSTGRES_HOST", "localhost"),
+            postgres_port=int(os.getenv("POSTGRES_PORT", "5432")),
+            postgres_db=os.getenv("POSTGRES_DB", "web_crawler"),
+            postgres_user=os.getenv("POSTGRES_USER", "admin"),
+            postgres_password=os.getenv("POSTGRES_PASSWORD"),
+            redis_host=os.getenv("REDIS_HOST", "localhost"),
+            redis_port=int(os.getenv("REDIS_PORT", "6379")),
+            redis_db=int(os.getenv("REDIS_DB", "0")),
+            redis_password=os.getenv("REDIS_PASSWORD")
         )
-        logger.debug("Redis storage initialized")
-
-    save_on_postgres = os.getenv("CRAWLER_STORAGE_POSTGRES", "true").lower() == "true"
-    logger.debug(f"Save on postgres: {save_on_postgres}")
-    
-    if save_on_postgres:
-        from core.storage import PostgresStorage
-        postgres_storage = PostgresStorage(
-            host=os.getenv("POSTGRES_HOST", "localhost"),
-            port=int(os.getenv("POSTGRES_PORT", "5432")),
-            dbname=os.getenv("POSTGRES_DB", "web_crawler"),
-            user=os.getenv("POSTGRES_USER", "postgres"),
-            password=os.getenv("POSTGRES_PASSWORD")
-        )
-        logger.debug("PostgreSQL storage initialized")
+    )
+    await db_context.__aenter__()
+    logger.debug("Database context initialized")
     
     # Start cleanup task
     asyncio.create_task(cleanup_task())
     logger.info("Web crawler API initialization complete")
 
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close database connections on shutdown."""
+    global db_context
+    if db_context:
+        await db_context.__aexit__(None, None, None)
+        db_context = None
+        logger.info("Database connections closed")
+
 @app.post("/crawl", response_model=CrawlResponse)
-async def crawl(request: CrawlRequest):
-    """
-    Crawl the specified URLs with the given settings.
-    
-    This endpoint accepts a list of URLs and crawling parameters, then returns the crawled data
-    along with metadata about the crawling process.
-    
-    The crawler will:
-    1. Initialize with the specified settings and environment variables
-    2. Crawl each URL up to the specified depth
-    3. Store results in the configured storage backends (if enabled in environment)
-    4. Return the crawled data and statistics
-    
-    Returns:
-        CrawlResponse: Contains the crawled data and statistics
-    
-    Raises:
-        HTTPException: If there's an error during crawling
-    """
+async def crawl(request: CrawlRequest) -> CrawlResponse:
+    """Crawl a list of URLs and return the results."""
     try:
-        # Get storage settings from environment
-        storage_redis = os.getenv("CRAWLER_STORAGE_REDIS", "false").lower() == "true"
-        storage_postgres = os.getenv("CRAWLER_STORAGE_POSTGRES", "false").lower() == "true"
-        memory_threshold = float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0"))
-        debug = os.getenv("CRAWLER_DEBUG", "false").lower() == "true"
-        
-        # Create crawler settings from request and environment
+        # Initialize crawler settings
         settings = CrawlerSettings(
             max_pages=request.max_pages,
             max_depth=request.max_depth,
-            allowed_domains=request.allowed_domains,
-            exclude_patterns=request.exclude_patterns,
             respect_robots=request.respect_robots,
             timeout=request.timeout,
             max_total_time=request.max_total_time,
             max_concurrent_pages=request.max_concurrent_pages,
-            memory_threshold=memory_threshold,  # From environment
-            storage_redis=storage_redis,        # From environment
-            storage_postgres=storage_postgres,   # From environment
-            debug=debug                         # From environment
+            memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0")),
+            allowed_domains=request.allowed_domains,
+            exclude_patterns=request.exclude_patterns
         )
         
-        # Initialize and run crawler
-        start_time = asyncio.get_event_loop().time()
-        
-        # Create a task for crawling to ensure proper cleanup
-        async with WebCrawlerAgent(settings) as crawler:
-            # Create a task for crawling
-            crawl_task = asyncio.create_task(crawler.crawl_urls(request.urls))
+        # Create crawler agent with existing database context
+        async with WebCrawlerAgent(settings, db_context=db_context) as agent:
+            results = await agent.crawl_urls(request.urls)
             
-            try:
-                # Wait for crawling to complete with timeout
-                results = await asyncio.wait_for(
-                    crawl_task,
-                    timeout=settings.max_total_time
-                )
-            except asyncio.TimeoutError:
-                # Cancel the task if it times out
-                crawl_task.cancel()
-                try:
-                    await crawl_task
-                except asyncio.CancelledError:
-                    pass
-                raise HTTPException(
-                    status_code=408,
-                    detail="Crawling timed out"
-                )
-            
-        # Calculate statistics
-        elapsed_time = asyncio.get_event_loop().time() - start_time
-        
-        # Convert results to response model
-        crawl_results = [
-            CrawlResult(
-                url=result["url"],
-                title=result.get("title"),
-                text=result["text"],
-                links=result["links"],
-                metadata=result["metadata"]
-            )
-            for result in results
-        ]
-        
         return CrawlResponse(
-            results=crawl_results,
+            success=True,
+            results=[CrawlResult(**result) for result in results],
             total_urls=len(request.urls),
             crawled_urls=len(results),
-            elapsed_time=elapsed_time
+            elapsed_time=0.0  # TODO: Track elapsed time
         )
         
     except Exception as e:

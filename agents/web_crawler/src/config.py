@@ -19,8 +19,6 @@ class CrawlerConfig(BaseModel):
     memory_threshold: float = 80.0
     
     # Storage settings
-    storage_redis: bool = True
-    storage_postgres: bool = False
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
@@ -50,8 +48,6 @@ def load_config() -> CrawlerConfig:
         "memory_threshold": float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0")),
         
         # Storage settings
-        "storage_redis": os.getenv("CRAWLER_STORAGE_REDIS", "true").lower() == "true",
-        "storage_postgres": os.getenv("CRAWLER_STORAGE_POSTGRES", "false").lower() == "true",
         "redis_host": os.getenv("CRAWLER_REDIS_HOST", "localhost"),
         "redis_port": int(os.getenv("CRAWLER_REDIS_PORT", "6379")),
         "redis_db": int(os.getenv("CRAWLER_REDIS_DB", "0")),

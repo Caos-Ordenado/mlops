@@ -3,14 +3,24 @@ Main entry point for the web crawler application.
 Can run either the example crawler or the FastAPI server.
 """
 
-import asyncio
 import os
 import sys
-from dotenv import load_dotenv
-from logging import setup_logger
+from shared.logging import log_database_config, setup_logger
 
-# Initialize logger
+# Initialize logger first
 logger = setup_logger("web_crawler")
+
+# Now import other modules
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(override=True)
+
+# Log database configuration
+log_database_config(logger)
+
+# Import asyncio after logger setup
+import asyncio
 
 async def run_example():
     """Run the example crawler."""
@@ -62,9 +72,6 @@ def run_server():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":
-    # Load environment variables
-    load_dotenv(override=True)
-    
     # Check run mode
     if len(sys.argv) > 1 and sys.argv[1] == "example":
         logger.info("Running example crawler...")

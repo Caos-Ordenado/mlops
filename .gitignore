@@ -20,3 +20,6 @@ k8s/secrets/*.env
 **/*.egg-info
 **/__pycache__
 **/dist
+
+
+**/rules_old/

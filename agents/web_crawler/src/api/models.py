@@ -58,6 +58,7 @@ class CrawlRequest(BaseModel):
         description="Maximum number of concurrent pages to crawl",
         example=5
     )
+
 class CrawlResult(BaseModel):
     """Model for individual crawl results."""
     url: str
@@ -68,6 +69,7 @@ class CrawlResult(BaseModel):
 
 class CrawlResponse(BaseModel):
     """Response model for crawl endpoint."""
+    success: bool
     results: List[CrawlResult]
     total_urls: int
     crawled_urls: int

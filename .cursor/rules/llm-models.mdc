@@ -1,10 +1,11 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-# Installed Modedls on Ollama
+# Available LLM Models
+
 - Llama 3.1
 - Llama 3.0
 - Llama 2.0
-- Deepseek-v3
+- Deepseek-v3 

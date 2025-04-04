@@ -34,8 +34,6 @@ async def main():
     logger.info(f"POSTGRES_PASSWORD: {'set' if os.getenv('POSTGRES_PASSWORD') else 'not set'}")
     
     # Crawler settings
-    logger.info(f"CRAWLER_STORAGE_REDIS: {os.getenv('CRAWLER_STORAGE_REDIS', 'not set')}")
-    logger.info(f"CRAWLER_STORAGE_POSTGRES: {os.getenv('CRAWLER_STORAGE_POSTGRES', 'not set')}")
     logger.info(f"CRAWLER_MAX_PAGES: {os.getenv('CRAWLER_MAX_PAGES', 'not set')}")
     logger.info(f"CRAWLER_MAX_DEPTH: {os.getenv('CRAWLER_MAX_DEPTH', 'not set')}")
     logger.info(f"CRAWLER_TIMEOUT: {os.getenv('CRAWLER_TIMEOUT', 'not set')}")
@@ -51,8 +49,7 @@ async def main():
         timeout=int(os.getenv("CRAWLER_TIMEOUT", "180000")),
         max_total_time=int(os.getenv("CRAWLER_MAX_TOTAL_TIME", "300")),
         max_concurrent_pages=int(os.getenv("CRAWLER_MAX_CONCURRENT_PAGES", "10")),
-        memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0")),
-        storage_redis=os.getenv("CRAWLER_STORAGE_REDIS", "True")
+        memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0"))
     )
     
     # URLs to crawl

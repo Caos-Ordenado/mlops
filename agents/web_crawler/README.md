@@ -104,8 +104,6 @@ CRAWLER_VIEWPORT_WIDTH=1920
 
 ### Storage Settings
 ```env
-CRAWLER_STORAGE_POSTGRES=true
-CRAWLER_STORAGE_REDIS=true
 POSTGRES_HOST=postgres.shared.svc.cluster.local
 POSTGRES_PORT=5432
 POSTGRES_USER=admin
@@ -188,7 +186,6 @@ Available in the shared namespace:
 - User: `admin`
 
 When using PostgreSQL storage:
-- Set `CRAWLER_STORAGE_POSTGRES=true`
 - Use the correct service DNS name
 - Check database connectivity before crawling large sites
 
@@ -197,7 +194,6 @@ Available in the shared namespace:
 - Inside cluster: `redis.shared.svc.cluster.local:6379`
 
 When using Redis storage:
-- Set `CRAWLER_STORAGE_REDIS=true`
 - Use the correct service DNS name
 - Monitor Redis memory usage for large crawls
 """ 
