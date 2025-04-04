@@ -28,12 +28,12 @@ alwaysApply: true
 ### Ollama Client
 - Base URL: http://home.server/ollama
 - Async interface for LLM interactions
-- Default model: llama2
+- Default model: llama3.1
 
 ## Best Practices
-1. Use async context managers for clients
-2. Handle connection errors gracefully
-3. Use shared logging configuration
+1. Use shared package for all logging
+2. Use async context managers for clients
+3. Handle connection errors gracefully
 4. Follow error handling patterns
 5. Document new features
 
@@ -41,7 +41,7 @@ alwaysApply: true
 
 ### Logging
 ```python
-from agent_utils.logging import setup_logger
+from shared.logging import setup_logger
 
 logger = setup_logger("my_agent")
 logger.info("Info message")
@@ -49,7 +49,7 @@ logger.info("Info message")
 
 ### Web Crawler
 ```python
-from agent_utils import WebCrawlerClient
+from shared.web_crawler_client import WebCrawlerClient
 
 async with WebCrawlerClient() as client:
     results = await client.crawl(
@@ -60,11 +60,11 @@ async with WebCrawlerClient() as client:
 
 ### Ollama
 ```python
-from agent_utils import OllamaClient
+from shared.ollama_client import OllamaClient
 
 async with OllamaClient() as llm:
     response = await llm.generate(
         "Your prompt here",
-        model="llama2"
+        model="llama3.1"
     )
 ``` 

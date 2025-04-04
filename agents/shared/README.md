@@ -11,7 +11,7 @@ pip install -e /path/to/agents/shared
 
 ```python
 # Basic usage example
-from agent_utils import (
+from shared import (
     setup_logger,
     DatabaseContext,
     RedisClient,
@@ -49,7 +49,8 @@ async with OllamaClient() as llm:
 Provides a unified database interface with PostgreSQL storage and Redis caching.
 
 ```python
-from agent_utils import DatabaseContext, WebPage
+from shared.database import DatabaseContext
+from shared.models import WebPage
 
 async with DatabaseContext() as db:
     # Create and save a webpage
@@ -73,7 +74,7 @@ async with DatabaseContext() as db:
 The `WebPage` model is optimized for RAG (Retrieval-Augmented Generation) applications:
 
 ```python
-from agent_utils import WebPage
+from shared.models import WebPage
 
 webpage = WebPage(
     url="https://example.com",
@@ -103,7 +104,7 @@ webpage = WebPage(
 Interface to the web crawler service for content retrieval:
 
 ```python
-from agent_utils import WebCrawlerClient, CrawlRequest
+from shared.web_crawler_client import WebCrawlerClient, CrawlRequest
 
 async with WebCrawlerClient() as crawler:
     # Check service health
@@ -132,7 +133,7 @@ async with WebCrawlerClient() as crawler:
 Interface to the local Ollama LLM service:
 
 ```python
-from agent_utils import OllamaClient
+from shared.ollama_client import OllamaClient
 
 async with OllamaClient() as llm:
     # Simple generation
@@ -155,7 +156,7 @@ async with OllamaClient() as llm:
 Thread-safe Redis client with connection pooling:
 
 ```python
-from agent_utils import RedisClient
+from shared.redis_client import RedisClient
 
 async with RedisClient() as redis:
     # Basic operations
@@ -175,7 +176,7 @@ async with RedisClient() as redis:
 Standardized logging configuration:
 
 ```python
-from agent_utils import setup_logger
+from shared.logging import setup_logger
 
 # Create logger
 logger = setup_logger("my_agent")
