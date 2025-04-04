@@ -6,10 +6,13 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Set
 import asyncio
 import os
-from loguru import logger
+from logging import setup_logger
 from crawl4ai import AsyncWebCrawler, CrawlResult, CrawlerRunConfig, BrowserConfig
 import aiohttp
 from .models import CrawlerSettings
+
+# Initialize logger
+logger = setup_logger("web_crawler.agent")
 
 class BaseAgent(ABC):
     """Base class for web crawling agents."""
@@ -22,8 +25,6 @@ class BaseAgent(ABC):
             viewport_width=int(os.getenv("CRAWLER_VIEWPORT_WIDTH", "1920")),
             viewport_height=int(os.getenv("CRAWLER_VIEWPORT_HEIGHT", "1080"))
         )
-        self.processed_urls: Set[str] = set()
-        self.processed_sitemaps: Set[str] = set()
         self.crawler = None
         logger.info(f"Initialized agent with settings: {settings.model_dump()}")
 

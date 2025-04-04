@@ -11,12 +11,37 @@ load_dotenv()
 async def main():
     # Configure logging
     logger.add(
-        "crawler.log",
+        "server.log",
         rotation="500 MB",
         retention="10 days",
         level=os.getenv("CRAWLER_LOG_LEVEL", "DEBUG"),
         enqueue=True  # Thread-safe logging
     )
+    
+    # Log environment variables
+    logger.info("Environment variables:")
+    # Redis variables
+    logger.info(f"REDIS_HOST: {os.getenv('REDIS_HOST', 'not set')}")
+    logger.info(f"REDIS_PORT: {os.getenv('REDIS_PORT', 'not set')}")
+    logger.info(f"REDIS_PASSWORD: {'set' if os.getenv('REDIS_PASSWORD') else 'not set'}")
+    logger.info(f"REDIS_DB: {os.getenv('REDIS_DB', 'not set')}")
+    
+    # PostgreSQL variables
+    logger.info(f"POSTGRES_HOST: {os.getenv('POSTGRES_HOST', 'not set')}")
+    logger.info(f"POSTGRES_PORT: {os.getenv('POSTGRES_PORT', 'not set')}")
+    logger.info(f"POSTGRES_DB: {os.getenv('POSTGRES_DB', 'not set')}")
+    logger.info(f"POSTGRES_USER: {os.getenv('POSTGRES_USER', 'not set')}")
+    logger.info(f"POSTGRES_PASSWORD: {'set' if os.getenv('POSTGRES_PASSWORD') else 'not set'}")
+    
+    # Crawler settings
+    logger.info(f"CRAWLER_STORAGE_REDIS: {os.getenv('CRAWLER_STORAGE_REDIS', 'not set')}")
+    logger.info(f"CRAWLER_STORAGE_POSTGRES: {os.getenv('CRAWLER_STORAGE_POSTGRES', 'not set')}")
+    logger.info(f"CRAWLER_MAX_PAGES: {os.getenv('CRAWLER_MAX_PAGES', 'not set')}")
+    logger.info(f"CRAWLER_MAX_DEPTH: {os.getenv('CRAWLER_MAX_DEPTH', 'not set')}")
+    logger.info(f"CRAWLER_TIMEOUT: {os.getenv('CRAWLER_TIMEOUT', 'not set')}")
+    logger.info(f"CRAWLER_MAX_TOTAL_TIME: {os.getenv('CRAWLER_MAX_TOTAL_TIME', 'not set')}")
+    logger.info(f"CRAWLER_MAX_CONCURRENT_PAGES: {os.getenv('CRAWLER_MAX_CONCURRENT_PAGES', 'not set')}")
+    logger.info(f"CRAWLER_MEMORY_THRESHOLD: {os.getenv('CRAWLER_MEMORY_THRESHOLD', 'not set')}")
     
     # Initialize crawler settings
     settings = CrawlerSettings(
@@ -45,6 +70,17 @@ async def main():
         try:
             results = await crawler.crawl_urls(urls)
             logger.info(f"Successfully crawled {len(results)} pages")
+            
+            # Print some stats about the results
+            for result in results:
+                logger.info(f"Crawled: {result['url']}")
+                logger.info(f"  Title: {result['title']}")
+                logger.info(f"  Found {len(result['links'])} links")
+                logger.info("  Metadata:")
+                for key, value in result['metadata'].items():
+                    if key != 'headers':  # Skip headers to keep output clean
+                        logger.info(f"    {key}: {value}")
+                logger.info("-" * 80)
             
         except Exception as e:
             logger.error(f"Error during crawling: {str(e)}")

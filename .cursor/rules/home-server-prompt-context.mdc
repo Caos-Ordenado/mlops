@@ -7,14 +7,9 @@ alwaysApply: true
 - I'm setting up an Ubuntu home server to run AI agents, local AI models, and potentially my custom-developed applications. Currently, I access this home server remotely via a VPN powered by Tailscale from my mac, and it runs MicroK8s with Traefik and ArgoCD configured. 
 - I usually connect to my home server from a Mac laptop using SSH and Kubectl, where I store Kubernetes manifests, Terraform code, and the applications I'm developing. Kubectl from my mac its already configured to interact with the microk8s server, dont ask for configurations or changes on that setup, it is already working.
 - My home server user its called caos and the host its also caos, its tailscape ip is internal-vpn-address
-- On the /etc/hosts file on my mac i have access to my home server using home.server, on it i have socat installed port forwarding to port 9080
+- On the /etc/hosts file on my mac i have access to my home server using home.server
+- Port forwarding is handled by socat (see home-server-socat.mdc for details)
 - There is no firewall on the home server.
-- Socat configuration on Mac which is the one that runs this code:
-  - Installed via Homebrew: `brew install socat`
-  - Running command: `socat TCP-LISTEN:9080,fork TCP:home.server:9080`
-  - This allows local access to Traefik's public port (9080) through localhost:80 or home.server:80
-  - Useful for accessing services without modifying /etc/hosts for each service 
-- By the previous rule, everytime you need to use a command which hosts its the home.server, YOU DONT add the port 9080 because its not needed
 - The development code its on my mac, not on the home server nor the cluster, everytime you need to check for it look inside the mac folders
 
 # Examples
@@ -92,4 +87,4 @@ curl --max-time 20 http://home.server:8080/api/http/middlewares
 curl --max-time 20 http://home.server:8080/api/rawdata
 ```
 
-Note: Remember that all services exposed through Traefik are automatically accessible via `http://home.server/<path>` without specifying port 9080.
+Note: Remember that all services exposed through Traefik are automatically accessible via `http://home.server/<path>`.

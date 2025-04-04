@@ -7,11 +7,11 @@ set -e
 cd "$(dirname "$0")"
 
 # Clean the log file
-echo "Cleaning crawler.log..."
-if [ -f "crawler.log" ]; then
-    rm crawler.log
+echo "Cleaning server.log..."
+if [ -f "server.log" ]; then
+    rm server.log
 fi
-touch crawler.log
+touch server.log
 
 # Verify Python path
 echo "Using Python from: $(which python)"

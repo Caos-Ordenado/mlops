@@ -10,8 +10,8 @@ import json
 from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 
-from agent_utils import CrawlResult
-from agent_utils.logging import setup_logger
+from agents.shared import CrawlResult
+from logging import setup_logger
 from .agent import WebResearchAgent
 
 # Configure logging

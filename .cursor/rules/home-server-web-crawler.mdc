@@ -3,7 +3,7 @@ description: Web crawler agent configuration and usage guidelines
 globs: 
 alwaysApply: true
 ---
-# Web Crawler Agent Rules
+# Web Crawler Rules
 
 ## Project Overview
 The web crawler is a high-performance agent with memory-adaptive features and a RESTful API, deployed in the home server Kubernetes cluster.
@@ -152,7 +152,7 @@ The crawler provides detailed output with configurable logging levels:
    - Displays basic information about crawled pages
    - Shows any errors or issues during crawling
 
-2. Log File (`crawler.log`):
+2. Log File (`server.log`):
    - Contains detailed logging information based on LOG_LEVEL
    - Includes timestamps for each operation
    - Shows full crawl results and memory usage when debug is enabled

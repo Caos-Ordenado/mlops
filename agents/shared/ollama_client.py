@@ -6,9 +6,10 @@ import aiohttp
 from typing import Dict, Any, Optional
 import json
 import requests
-import logging
+from .logging import setup_logger
 
-logger = logging.getLogger(__name__)
+# Set up logger
+logger = setup_logger(__name__)
 
 class OllamaClient:
     """Client for interacting with Ollama LLM service."""

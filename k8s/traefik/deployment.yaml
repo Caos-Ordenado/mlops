@@ -32,6 +32,12 @@ spec:
             - name: traefik
               containerPort: 8080
               protocol: TCP
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+            - name: posgres
+              containerPort: 5432
+              protocol: TCP
           volumeMounts:
             - name: config
               mountPath: "/config"

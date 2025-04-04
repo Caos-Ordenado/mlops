@@ -7,23 +7,22 @@ import asyncio
 import os
 import xml.etree.ElementTree as ET
 from urllib.parse import urljoin, urlparse
-from loguru import logger
 from pydantic import BaseModel, Field
-from crawl4ai import AsyncWebCrawler, CrawlResult, CrawlerRunConfig, BrowserConfig, CacheMode
-from crawl4ai.async_dispatcher import MemoryAdaptiveDispatcher
-from crawl4ai import CrawlerMonitor, DisplayMode
 from dotenv import load_dotenv
 import aiohttp
 from asyncio import TimeoutError
 from urllib.robotparser import RobotFileParser
-from .storage import StorageBackend, PostgresStorage, RedisStorage
-from datetime import datetime
 import psutil
-import sys
 from bs4 import BeautifulSoup
 from .agent import BaseAgent
-from .models import CrawlerSettings
 import time
+import json
+from logging import setup_logger
+from database.context import DatabaseContext
+from models.webpage import WebPage
+
+# Initialize logger
+logger = setup_logger("web_crawler.core")
 
 # Load environment variables
 load_dotenv()
@@ -61,7 +60,7 @@ class CrawlerSettings(BaseModel):
     processed_urls: Set[str] = set()
     processed_sitemaps: Set[str] = set()
     site_urls: List[str] = []
-    debug: bool = os.getenv("CRAWLER_DEBUG", "false").lower() == "true"
+    debug: bool = os.getenv("CRAWLER_LOG_LEVEL", "false").lower() == "true"
 
     model_config = {
         "arbitrary_types_allowed": True
@@ -210,66 +209,25 @@ class WebCrawlerAgent(BaseAgent):
         """Initialize the web crawler agent."""
         super().__init__(settings)
         self.session = None
-        self.processed_urls: Set[str] = set()
         self.start_time = None
-        
-        # Initialize storage backends
-        self.redis_storage = None
-        self.postgres_storage = None
-        if settings.storage_redis:
-            redis_host = os.getenv("REDIS_HOST", "localhost")
-            redis_port = int(os.getenv("REDIS_PORT", "6379"))
-            redis_db = int(os.getenv("REDIS_DB", "0"))
-            redis_password = os.getenv("REDIS_PASSWORD")
-            self.redis_storage = RedisStorage(
-                host=redis_host,
-                port=redis_port,
-                db=redis_db,
-                password=redis_password
-            )
-        if settings.storage_postgres:
-            postgres_host = os.getenv("POSTGRES_HOST", "localhost")
-            postgres_port = int(os.getenv("POSTGRES_PORT", "5432"))
-            postgres_db = os.getenv("POSTGRES_DB", "web_crawler")
-            postgres_user = os.getenv("POSTGRES_USER", "admin")
-            postgres_password = os.getenv("POSTGRES_PASSWORD")
-            self.postgres_storage = PostgresStorage(
-                host=postgres_host,
-                port=postgres_port,
-                dbname=postgres_db,
-                user=postgres_user,
-                password=postgres_password
-            )
+        self.db_context = None
     
-    def _should_crawl_url(self, url: str) -> bool:
-        """Check if a URL should be crawled based on settings."""
-        # Skip if already processed
-        if url in self.processed_urls:
-            return False
-
-        # Check allowed domains
-        if self.settings.allowed_domains:
-            url_domain = get_domain(url)
-            if not any(url_domain == domain for domain in self.settings.allowed_domains):
-                return False
-
-        # Check exclude patterns
-        if self.settings.exclude_patterns:
-            if any(pattern in url for pattern in self.settings.exclude_patterns):
-                return False
-
-        return True
-
-    async def crawl_url(self, url: str) -> Dict[str, Any]:
-        """
-        Crawl a single URL and return the extracted data.
-        
-        Args:
-            url: The URL to crawl
-            
-        Returns:
-            Dict containing the crawled data and metadata
-        """
+    async def __aenter__(self):
+        """Enter async context."""
+        self.session = aiohttp.ClientSession()
+        self.db_context = DatabaseContext()
+        await self.db_context.__aenter__()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit async context."""
+        if self.session:
+            await self.session.close()
+        if self.db_context:
+            await self.db_context.__aexit__(exc_type, exc_val, exc_tb)
+    
+    async def crawl_url(self, url: str) -> Optional[Dict[str, Any]]:
+        """Crawl a single URL and return the extracted data."""
         try:
             logger.debug(f"Starting crawl of {url}")
             
@@ -283,41 +241,81 @@ class WebCrawlerAgent(BaseAgent):
                 html = await response.text()
                 soup = BeautifulSoup(html, 'html.parser')
                 
-                # Extract data
-                data = {
-                    'url': url,
-                    'html': html,
-                    'text': soup.get_text(),
-                    'title': soup.title.string if soup.title else None,
-                    'links': [
+                # Extract meta tags
+                meta_tags = {}
+                for meta in soup.find_all('meta'):
+                    name = meta.get('name', meta.get('property', ''))
+                    if name:
+                        meta_tags[name] = meta.get('content', '')
+
+                # Extract headers hierarchy
+                headers = {
+                    'h1': [h.get_text(strip=True) for h in soup.find_all('h1')],
+                    'h2': [h.get_text(strip=True) for h in soup.find_all('h2')],
+                    'h3': [h.get_text(strip=True) for h in soup.find_all('h3')]
+                }
+
+                # Extract images
+                images = [{
+                    'src': img.get('src', ''),
+                    'alt': img.get('alt', ''),
+                    'title': img.get('title', '')
+                } for img in soup.find_all('img')]
+
+                # Extract structured data (JSON-LD)
+                structured_data = []
+                for script in soup.find_all('script', type='application/ld+json'):
+                    try:
+                        structured_data.append(json.loads(script.string))
+                    except (json.JSONDecodeError, AttributeError):
+                        pass
+
+                # Extract main content (article or main tag)
+                main_content = ''
+                main_tag = soup.find('main') or soup.find('article')
+                if main_tag:
+                    main_content = main_tag.get_text(strip=True)
+                
+                # Create webpage instance
+                webpage = WebPage.from_crawl_result(
+                    url=url,
+                    title=soup.title.string.strip() if soup.title else None,
+                    text=soup.get_text(strip=True),
+                    links=[
                         urljoin(url, link['href'])
                         for link in soup.find_all('a', href=True)
                     ],
-                    'metadata': {
+                    metadata={
                         'status_code': response.status,
-                        'headers': dict(response.headers),
                         'content_type': response.headers.get('content-type'),
-                        'timestamp': time.time()
+                        'last_modified': response.headers.get('last-modified'),
+                        'content_language': response.headers.get('content-language'),
+                        'meta_tags': meta_tags,
+                        'headers_hierarchy': headers,
+                        'images': images,
+                        'structured_data': structured_data,
+                        'main_content': main_content
                     }
-                }
+                )
                 
-                # Store results if storage is configured
-                if self.redis_storage:
-                    await self.redis_storage.store_result(url, data)
-                if self.postgres_storage:
-                    await self.postgres_storage.store_result(url, data)
+                # Save webpage using shared components
+                await self.db_context.webpages.save(webpage)
                 
                 # Check memory usage after crawling
                 if self.settings.debug:
                     memory_percent = psutil.Process().memory_percent()
                     logger.debug(f"Memory usage after crawling {url}: {memory_percent:.2f}%")
                 
-                logger.debug(f"Completed crawl of {url}")
-                return data
+                logger.info(f"Completed crawl of {url}")
+                return webpage.to_redis_data()
                 
+        except TimeoutError:
+            logger.warning(f"Timeout while crawling {url}")
+            return None
+            
         except Exception as e:
             logger.error(f"Error crawling {url}: {str(e)}")
-            raise
+            return None
     
     async def crawl_urls(self, urls: List[str], current_depth: int = 0) -> List[Dict[str, Any]]:
         """
@@ -334,38 +332,49 @@ class WebCrawlerAgent(BaseAgent):
             logger.info(f"Reached max depth {self.settings.max_depth}")
             return []
 
+        # Track successfully crawled URLs separately from processed ones
+        successful_crawls = len([url for url in self.settings.processed_urls if url in self.settings.processed_urls])
+        if successful_crawls >= self.settings.max_pages:
+            logger.info(f"Reached max pages {self.settings.max_pages}")
+            return []
+
         try:
             logger.debug(f"Starting crawl of {len(urls)} URLs at depth {current_depth}")
             self.start_time = time.time() if current_depth == 0 else self.start_time
             
-            # Filter URLs based on settings
+            # Filter URLs based on settings and remaining capacity
+            remaining_slots = self.settings.max_pages - successful_crawls
             filtered_urls = []
             for url in urls:
+                if len(filtered_urls) >= remaining_slots:
+                    break
                 if self._should_crawl_url(url):
                     filtered_urls.append(url)
-                    self.processed_urls.add(url)
+
+            if not filtered_urls:
+                return []
 
             # Create tasks for filtered URLs
             tasks = []
             semaphore = asyncio.Semaphore(self.settings.max_concurrent_pages)
             
-            async def crawl_with_semaphore(url: str) -> Dict[str, Any]:
+            async def crawl_with_semaphore(url: str) -> Optional[Dict[str, Any]]:
                 async with semaphore:
-                    return await self.crawl_url(url)
+                    result = await self.crawl_url(url)
+                    if result:
+                        self.settings.processed_urls.add(url)
+                    return result
 
-            remaining_slots = self.settings.max_pages - len(self.processed_urls)
-            for url in filtered_urls[:remaining_slots]:
+            for url in filtered_urls:
                 tasks.append(asyncio.create_task(crawl_with_semaphore(url)))
-            
-            if not tasks:
-                return []
 
             # Wait for all tasks to complete
             results = await asyncio.gather(*tasks, return_exceptions=True)
             valid_results = [r for r in results if isinstance(r, dict)]
             
             # Check if we should continue crawling
-            if current_depth < self.settings.max_depth and len(self.processed_urls) < self.settings.max_pages:
+            successful_crawls += len(valid_results)
+            if current_depth < self.settings.max_depth and successful_crawls < self.settings.max_pages:
                 # Extract all links from results
                 next_urls = []
                 for result in valid_results:
@@ -377,25 +386,28 @@ class WebCrawlerAgent(BaseAgent):
                     next_results = await self.crawl_urls(next_urls, current_depth + 1)
                     valid_results.extend(next_results)
             
-            logger.info(f"Completed crawl of {len(valid_results)} URLs at depth {current_depth}")
+            logger.info(f"Completed crawl of {len(valid_results)} URLs at depth {current_depth} (total successfully crawled: {successful_crawls})")
             return valid_results
             
         except Exception as e:
             logger.error(f"Error during crawl at depth {current_depth}: {str(e)}")
             raise
     
-    async def __aenter__(self):
-        """Enter the async context."""
-        self.session = aiohttp.ClientSession(
-            headers={'User-Agent': self.settings.user_agent}
-        )
-        return self
-    
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Exit the async context."""
-        if self.session:
-            await self.session.close()
-        if self.redis_storage:
-            await self.redis_storage.close()
-        if self.postgres_storage:
-            await self.postgres_storage.close() 
+    def _should_crawl_url(self, url: str) -> bool:
+        """Check if a URL should be crawled based on settings."""
+        # Skip if already processed
+        if url in self.settings.processed_urls:
+            return False
+
+        # Check allowed domains
+        if self.settings.allowed_domains:
+            url_domain = get_domain(url)
+            if not any(url_domain == domain for domain in self.settings.allowed_domains):
+                return False
+
+        # Check exclude patterns
+        if self.settings.exclude_patterns:
+            if any(pattern in url for pattern in self.settings.exclude_patterns):
+                return False
+
+        return True 

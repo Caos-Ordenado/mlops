@@ -7,18 +7,10 @@ import asyncio
 import os
 import sys
 from dotenv import load_dotenv
-from loguru import logger
+from logging import setup_logger
 
-def setup_logging():
-    """Configure logging."""
-    logger.add(
-        "crawler.log",
-        rotation="100 MB",
-        retention="5 days",
-        compression="zip",
-        level=os.getenv("CRAWLER_LOG_LEVEL", "DEBUG"),
-        enqueue=True  # Thread-safe logging
-    )
+# Initialize logger
+logger = setup_logger("web_crawler")
 
 async def run_example():
     """Run the example crawler."""
@@ -72,9 +64,6 @@ def run_server():
 if __name__ == "__main__":
     # Load environment variables
     load_dotenv(override=True)
-    
-    # Setup logging
-    setup_logging()
     
     # Check run mode
     if len(sys.argv) > 1 and sys.argv[1] == "example":

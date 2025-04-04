@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""
+Database initialization and migration script.
+"""
+
+import asyncio
+import os
+import sys
+from pathlib import Path
+
+# Add the parent directory to Python path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from agents.shared import DatabaseContext, DatabaseConfig
+
+async def init_database():
+    """Initialize the database and create tables."""
+    # Create database config
+    config = DatabaseConfig(
+        postgres_host=os.getenv("POSTGRES_HOST", "home.server"),
+        postgres_port=int(os.getenv("POSTGRES_PORT", "5432")),
+        postgres_db=os.getenv("POSTGRES_DB", "web_crawler"),
+        postgres_user=os.getenv("POSTGRES_USER", "admin"),
+        postgres_password=os.getenv("POSTGRES_PASSWORD"),
+        redis_host=os.getenv("REDIS_HOST", "home.server"),
+        redis_port=int(os.getenv("REDIS_PORT", "6379")),
+        redis_db=int(os.getenv("REDIS_DB", "0")),
+        redis_password=os.getenv("REDIS_PASSWORD"),
+        echo_sql=True
+    )
+    
+    print("Initializing database...")
+    async with DatabaseContext(config=config) as db:
+        await db.db.create_tables()
+        print("Database tables created successfully!")
+
+if __name__ == "__main__":
+    asyncio.run(init_database()) 

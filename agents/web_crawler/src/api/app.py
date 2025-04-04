@@ -6,11 +6,14 @@ import asyncio
 from api.models import CrawlRequest, CrawlResponse, CrawlResult
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
+from logging import setup_logger
 import os
 from dotenv import load_dotenv
 
 from core import WebCrawlerAgent, CrawlerSettings
+
+# Initialize logger
+logger = setup_logger("web_crawler.api")
 
 # Load environment variables
 load_dotenv()
@@ -82,7 +85,9 @@ async def startup_event():
     logger.info("Initializing web crawler API...")
     
     # Initialize storage if enabled
-    if os.getenv("CRAWLER_STORAGE_REDIS", "false").lower() == "true":
+    save_on_redis = os.getenv("CRAWLER_STORAGE_REDIS", "false").lower() == "true"
+    logger.debug(f"Save on redis: {save_on_redis}")
+    if save_on_redis:
         from core.storage import RedisStorage
         
         # Debug log Redis configuration
@@ -104,8 +109,11 @@ async def startup_event():
             password=redis_password
         )
         logger.debug("Redis storage initialized")
+
+    save_on_postgres = os.getenv("CRAWLER_STORAGE_POSTGRES", "true").lower() == "true"
+    logger.debug(f"Save on postgres: {save_on_postgres}")
     
-    if os.getenv("CRAWLER_STORAGE_POSTGRES", "false").lower() == "true":
+    if save_on_postgres:
         from core.storage import PostgresStorage
         postgres_storage = PostgresStorage(
             host=os.getenv("POSTGRES_HOST", "localhost"),
@@ -226,7 +234,7 @@ if __name__ == "__main__":
     load_dotenv(override=True)
     # Configure logging
     logger.add(
-        "crawler.log",
+        "server.log",
         rotation="100 MB",
         retention="5 days",
         compression="zip",

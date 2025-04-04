@@ -18,5 +18,9 @@ spec:
       port: 5432
       targetPort: postgres
       name: postgres
+    - protocol: TCP
+      port: 6379
+      targetPort: redis
+      name: redis
   selector:
     app.kubernetes.io/name: traefik

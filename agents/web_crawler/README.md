@@ -125,7 +125,7 @@ The project includes a `start.sh` script that handles environment setup and serv
 ```
 
 The script will:
-1. Clean the crawler.log file
+1. Clean the server.log file
 2. Verify Python version and virtual environment
 3. Install/update requirements
 4. Load environment variables
@@ -148,7 +148,7 @@ The crawler provides detailed output with configurable logging levels:
    - Displays basic information about crawled pages
    - Shows any errors or issues during crawling
 
-2. Log File (`crawler.log`):
+2. Log File (`server.log`):
    - Contains detailed logging information based on LOG_LEVEL
    - Includes timestamps for each operation
    - Shows full crawl results and memory usage when debug is enabled

@@ -1,7 +1,8 @@
 ## **Project Prompt: Supermarket Price Comparison AI Agent**
 
 ### **Objective**
-Develop an AI-powered agent integrated with an existing web crawler system to analyze, compare, and identify the best product prices across multiple supermarket websites. The AI model will utilize collected data stored in a Redis instance and/or PostgreSQL database already available in the environment.
+Develop an adaptive AI-powered agent integrated with an existing, multi-level depth web crawler to intelligently search, analyze, and identify the best (lowest) prices for products across multiple websites.
+The AI agent will dynamically control crawler depth, utilize advanced semantic analysis with Llama 3 LLM (8B), and leverage data already stored in Redis and PostgreSQL.
 
 ### **Current Environment**
 - **Hardware:**
@@ -25,9 +26,10 @@ Develop an AI-powered agent integrated with an existing web crawler system to an
 
 ### **Project Steps & Requirements**
 
-#### **Step 1: Data Retrieval and Integration**
-- Connect the AI model to the existing Redis and/or PostgreSQL database.
-- Develop efficient queries to retrieve product-related data stored by the web crawler (product name, price, URL, timestamp, supermarket identifier).
+#### **Step 1: Adaptive Web Search Integration**
+ - Develop a DuckDuckGo Search Tool:
+   - Accept natural language queries from the agent.
+   - Provide relevant URLs for initial scraping (approximately 10 initial results).
 
 #### **Step 2: Data Processing and Cleaning**
 - Use the LLM to process and standardize raw data, addressing issues such as:

@@ -6,10 +6,10 @@ import os
 from typing import Optional, Any, Dict
 import json
 import aioredis
-import logging
+from .logging import setup_logger, log_database_config
 from contextlib import asynccontextmanager
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 class RedisClient:
     """Async Redis client for agent utilities."""
@@ -44,6 +44,9 @@ class RedisClient:
     async def __aenter__(self) -> 'RedisClient':
         """Async context manager entry."""
         if not self.client:
+            # Log Redis configuration before connecting
+            log_database_config(logger)
+            
             redis_url = f"redis://{self.host}:{self.port}/{self.db}"
             logger.debug(f"Connecting to Redis at {self.host}:{self.port}/{self.db}")
             

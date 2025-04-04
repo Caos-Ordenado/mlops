@@ -13,8 +13,8 @@ import psycopg2
 from datetime import datetime, timedelta
 import aioredis
 
-from agent_utils import WebCrawlerClient, CrawlResult, OllamaClient
-from agent_utils.logging import setup_logger
+from agents.shared import WebCrawlerClient, CrawlResult, OllamaClient
+from logging import setup_logger
 
 # Set up logger
 logger = setup_logger("web_research_agent")

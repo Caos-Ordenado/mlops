@@ -2,8 +2,9 @@
 Shared models for the web crawler.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Set
 from pydantic import BaseModel, Field
+import os
 
 class CrawlerSettings(BaseModel):
     """Settings for the web crawler."""
@@ -17,6 +18,23 @@ class CrawlerSettings(BaseModel):
     max_concurrent_pages: int = Field(default=10, gt=0)
     memory_threshold: float = Field(default=80.0, gt=0.0, lt=100.0)
     user_agent: str = "Mozilla/5.0 (compatible; WebCrawlerAgent/1.0)"
-    storage_redis: bool = False
-    storage_postgres: bool = False
-    debug: bool = False 
+    storage_redis: bool = Field(default=False)
+    storage_postgres: bool = Field(default=False)
+    debug: bool = Field(default=False)
+    processed_urls: Set[str] = Field(default_factory=set)
+    processed_sitemaps: Set[str] = Field(default_factory=set)
+
+    model_config = {
+        "arbitrary_types_allowed": True
+    }
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Initialize empty sets if not provided
+        if 'processed_urls' not in data:
+            self.processed_urls = set()
+        if 'processed_sitemaps' not in data:
+            self.processed_sitemaps = set()
+        # Set debug from environment if not provided
+        if 'debug' not in data:
+            self.debug = os.getenv("CRAWLER_DEBUG", "false").lower() == "true" 

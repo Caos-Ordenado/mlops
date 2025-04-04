@@ -6,14 +6,14 @@ import os
 import json
 import asyncio
 import aiohttp
-import logging
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from urllib.parse import urljoin
+from .logging import setup_logger
 
 # Set up logger
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 @dataclass
 class CrawlRequest:
