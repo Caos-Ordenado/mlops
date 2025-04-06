@@ -15,15 +15,26 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16-alpine
+          image: pgvector/pgvector:pg16
           ports:
             - containerPort: 5432
           envFrom:
             - secretRef:
                 name: postgres-secrets
+          env:
+            - name: POSTGRES_DB
+              value: web_crawler
+            - name: POSTGRES_USER
+              value: admin
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_PASSWORD
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
+              subPath: postgres
           resources:
             requests:
               memory: "256Mi"

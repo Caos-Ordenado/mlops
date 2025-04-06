@@ -7,11 +7,16 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+from sqlalchemy import text
 
 # Add the parent directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from agents.shared import DatabaseContext, DatabaseConfig
+# Load environment variables from .env file
+load_dotenv()
+
+from shared import DatabaseContext, DatabaseConfig
 
 async def init_database():
     """Initialize the database and create tables."""
@@ -31,6 +36,14 @@ async def init_database():
     
     print("Initializing database...")
     async with DatabaseContext(config=config) as db:
+        # Install pgvector extension
+        print("Installing pgvector extension...")
+        async with db.db.engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        print("pgvector extension installed successfully!")
+        
+        # Create tables
+        print("Creating database tables...")
         await db.db.create_tables()
         print("Database tables created successfully!")
 

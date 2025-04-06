@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Any
 from sqlalchemy import Column, String, JSON, DateTime, Text, Integer, Index, func
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.sql import expression
+from pgvector.sqlalchemy import Vector
 
 from .base import Base
 
@@ -42,13 +43,14 @@ class WebPage(Base):
     
     # Search optimization
     search_vector = Column(TSVECTOR)
-    embedding = Column(JSON)  # Vector embedding for semantic search
+    embedding = Column(Vector(1536))  # Vector embedding for semantic search (1536 for OpenAI embeddings)
 
     # Indexes
     __table_args__ = (
         Index('idx_webpage_crawled_at', crawled_at),
         Index('idx_webpage_search_vector', search_vector, postgresql_using='gin'),
         Index('idx_webpage_content_language', content_language),
+        Index('idx_webpage_embedding', embedding, postgresql_using='ivfflat'),  # For vector similarity search
     )
 
     def to_redis_data(self) -> Dict[str, Any]:
@@ -81,7 +83,7 @@ class WebPage(Base):
             "last_updated": self.last_updated.isoformat() if self.last_updated else None,
             
             # Search optimization
-            "embedding": self.embedding,
+            "embedding": self.embedding.tolist() if self.embedding is not None else None,  # Convert vector to list for Redis
             
             # Required fields for CrawlResult
             "text": self.full_text or self.main_content or "",
@@ -129,7 +131,7 @@ class WebPage(Base):
             last_updated=datetime.fromisoformat(data["last_updated"]) if data.get("last_updated") else None,
             
             # Search optimization
-            embedding=data.get("embedding")
+            embedding=data.get("embedding")  # Will be converted to Vector by SQLAlchemy
         )
 
     def to_rag_context(self) -> Dict[str, Any]:
@@ -205,6 +207,27 @@ class WebPage(Base):
         
         # Update search vector using PostgreSQL's to_tsvector
         self.search_vector = func.to_tsvector('english', combined_text)
+
+    def update_embedding(self, embedding: List[float]) -> None:
+        """Update the vector embedding for semantic search."""
+        self.embedding = embedding
+
+    @classmethod
+    def find_similar(cls, session, query_embedding: List[float], limit: int = 5) -> List['WebPage']:
+        """Find similar web pages using vector similarity search."""
+        return session.query(cls).order_by(
+            cls.embedding.cosine_distance(query_embedding)
+        ).limit(limit).all()
+
+    @classmethod
+    def find_similar_with_threshold(cls, session, query_embedding: List[float], 
+                                  threshold: float = 0.8, limit: int = 5) -> List['WebPage']:
+        """Find similar web pages using vector similarity search with a threshold."""
+        return session.query(cls).filter(
+            cls.embedding.cosine_distance(query_embedding) < threshold
+        ).order_by(
+            cls.embedding.cosine_distance(query_embedding)
+        ).limit(limit).all()
 
     def __repr__(self) -> str:
         """String representation of the WebPage."""

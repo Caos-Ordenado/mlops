@@ -17,6 +17,7 @@ setup(
         "loguru>=0.7.0",     # For enhanced logging
         "beautifulsoup4>=4.12.0",  # Added for web crawler
         "pydantic>=2.0.0",   # Added for data validation
+        "pgvector>=0.2.0",   # Added for vector similarity search
     ],
     python_requires=">=3.8",
     extras_require={
