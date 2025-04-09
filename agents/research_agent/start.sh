@@ -34,6 +34,9 @@ echo "Checking required packages..."
 pip show fastapi
 pip show agent-utils
 
-# Start the FastAPI application
-echo "Starting Research Agent server..."
-PYTHONPATH=$PYTHONPATH:$(pwd)/src research-agent 
+# Set the Python path to include the project root
+export PYTHONPATH=$PYTHONPATH:$(pwd)/..
+
+# Start the FastAPI application with hot reload
+echo "Starting Research Agent server with hot reload..."
+python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="research-agent",
+    name="research_agent",
     version="0.1.0",
     description="AI agent for research using web crawler and LLM",
     packages=find_packages(where="src"),
@@ -16,11 +16,12 @@ setup(
         "pydantic>=2.0.0",
         "pydantic-settings>=2.0.0",
         "python-dotenv>=1.0.0",
+        "duckduckgo-search>=4.1.0",  # DuckDuckGo search functionality
+        "langchain>=0.1.0",
+        "beautifulsoup4>=4.12.0",
+        "requests>=2.31.0",
+        "lxml>=4.9.0",
+        "brotli>=1.1.0",  # Add Brotli compression support
     ],
-    entry_points={
-        "console_scripts": [
-            "research-agent=research_agent.server:main",
-        ]
-    },
-    python_requires=">=3.8"
+    python_requires=">=3.10",
 ) 

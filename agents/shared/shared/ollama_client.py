@@ -68,12 +68,8 @@ class OllamaClient:
         if system:
             payload["system"] = system
         
-        logger.debug(f"Sending generate request to: {url}")
-        logger.debug(f"Request payload: {json.dumps(payload, indent=2)}")
-        
         try:
             async with self.session.post(url, json=payload) as response:
-                logger.debug(f"Generate response status: {response.status}")
                 
                 if response.status != 200:
                     error_text = await response.text()
@@ -96,7 +92,6 @@ class OllamaClient:
                 else:
                     # Handle regular JSON response
                     data = await response.json()
-                    logger.debug(f"Generate response data: {json.dumps(data, indent=2)}")
                     return data.get('response', '').strip()
                 
         except Exception as e:

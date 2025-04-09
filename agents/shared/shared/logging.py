@@ -3,6 +3,7 @@ Shared logger configuration for agents.
 """
 
 import os
+import sys
 
 def log_database_config(logger_instance=None):
     """Log database configuration details at debug level.
@@ -15,18 +16,18 @@ def log_database_config(logger_instance=None):
     
     # PostgreSQL Configuration
     log.debug("PostgreSQL Configuration:")
-    log.debug(f"  Host: {os.getenv('POSTGRES_HOST', 'home.server')}")
-    log.debug(f"  Port: {os.getenv('POSTGRES_PORT', '5432')}")
-    log.debug(f"  Database: {os.getenv('POSTGRES_DB', 'web_crawler')}")
-    log.debug(f"  User: {os.getenv('POSTGRES_USER', 'admin')}")
+    log.debug(f"  Host: {os.getenv('POSTGRES_HOST')}")
+    log.debug(f"  Port: {os.getenv('POSTGRES_PORT')}")
+    log.debug(f"  Database: {os.getenv('POSTGRES_DB')}")
+    log.debug(f"  User: {os.getenv('POSTGRES_USER')}")
     log.debug(f"  Password: {os.getenv('POSTGRES_PASSWORD')}")
     
     # Redis Configuration
     log.debug("Redis Configuration:")
-    log.debug(f"  Host: {os.getenv('REDIS_HOST', 'home.server')}")
-    log.debug(f"  Port: {os.getenv('REDIS_PORT', '6379')}")
+    log.debug(f"  Host: {os.getenv('REDIS_HOST')}")
+    log.debug(f"  Port: {os.getenv('REDIS_PORT')}")
     log.debug(f"  Password: {os.getenv('REDIS_PASSWORD')}")
-    log.debug(f"  DB: {os.getenv('REDIS_DB', '0')}")
+    log.debug(f"  DB: {os.getenv('REDIS_DB')}")
 
 def setup_logger(name: str):
     """Configure logger for an agent.
@@ -46,6 +47,7 @@ def setup_logger(name: str):
     log_level = os.getenv("LOG_LEVEL", "DEBUG")
     
     # Add file handler with rotation and retention
+    # <green>{time:YYYY-MM-DD HH:mm:ss}</green> | 
     logger.add(
         "server.log",
         rotation="100 MB",
@@ -53,14 +55,15 @@ def setup_logger(name: str):
         compression="zip",
         level=log_level,
         enqueue=True,  # Thread-safe logger
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
     )
     
     # Add stderr handler for console output
+    # <green>{time:YYYY-MM-DD HH:mm:ss}</green> | 
     logger.add(
-        lambda msg: print(msg, flush=True),
+        sys.stderr,
         level=log_level,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
     )
     
     logger_instance = logger.bind(name=name)

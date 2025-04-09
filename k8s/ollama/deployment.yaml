@@ -29,12 +29,12 @@ spec:
         - containerPort: 11434
         resources:
           requests:
-            memory: "8Gi"
-            cpu: "2"
+            memory: "16Gi"
+            cpu: "8"
             nvidia.com/gpu: "1"
           limits:
-            memory: "16Gi"
-            cpu: "4"
+            memory: "24Gi"
+            cpu: "16"
             nvidia.com/gpu: "1"
         env:
         - name: NVIDIA_VISIBLE_DEVICES

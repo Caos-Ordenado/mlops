@@ -74,7 +74,7 @@ Request body:
 ```json
 {
   "query": "Your research question",
-  "model": "llama3.1",
+  "model": "llama3.3",
   "max_tokens": 1000,
   "additional_context": "Optional additional context for the query"
 }
