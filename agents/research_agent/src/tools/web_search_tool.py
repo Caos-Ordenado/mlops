@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 import random
 import aiohttp
 from bs4 import BeautifulSoup
+from tools.llm_provider import LLMProvider, get_provider_from_model
 from shared.logging import setup_logger
 from config import HEADERS, SEARCH_ENGINES, BRAVE_HEADERS, SEARCH_ENGINE_HEADERS
 from tools.product_extractor_tool import product_extractor
@@ -20,16 +21,17 @@ logger = setup_logger("search_tool")
 class WebSearchTool:
     """Tool for searching the web using multiple search engines"""
     
-    def __init__(self, model: str = "llama3.1"):
+    def __init__(self, model: str = "mixtral"):
         """
         Initialize the web search tool
         
         Args:
-            model: The Ollama model to use for HTML extraction
+            model: The model to use for HTML extraction
         """
         self.name = "web_search"
         self.description = "Search the web for product URLs using multiple search engines"
         self.model = model
+        self.provider = get_provider_from_model(model)
         self.parameters = {
             "type": "object",
             "properties": {
@@ -50,7 +52,7 @@ class WebSearchTool:
                 },
                 "model": {
                     "type": "string",
-                    "description": "The Ollama model to use for HTML extraction",
+                    "description": "The model to use for HTML extraction",
                     "default": model
                 }
             },
@@ -244,7 +246,7 @@ class WebSearchTool:
             query: The search query
             engine: The search engine to use (default: random)
             max_results: Maximum number of results to return (default: 5)
-            model: The Ollama model to use for HTML extraction (defaults to tool's default model)
+            model: The model to use for HTML extraction (defaults to tool's default model)
             
         Returns:
             List of product URLs

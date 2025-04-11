@@ -7,9 +7,7 @@ from pydantic import BaseModel
 from shared.ollama_client import OllamaClient
 from tools.web_search_tool import web_search
 from prompts.research_prompt import RESEARCH_SYSTEM_PROMPT
-from utils.tool_utils import extract_tool_call
 from parsers.research_parser import parse_llm_response
-from config import settings
 from tools.web_crawler_tool import WebCrawlerTool
 
 logger = setup_logger("research_agent.api.research")
@@ -21,6 +19,7 @@ class ResearchRequest(BaseModel):
     query: str
     model: str = "llama3.1"
     max_tokens: int = 1000
+    additional_context: str = None
 
 class ResearchResponse(BaseModel):
     """Response model for product research"""
@@ -168,9 +167,9 @@ def extract_tool_call(response: str) -> tuple[str, dict] | None:
     return None
 
 @router.post("/", response_model=ResearchResponse)
-async def perform_research(request: ResearchRequest) -> ResearchResponse:
+async def research(request: ResearchRequest) -> ResearchResponse:
     """
-    Perform product research using web search and Ollama
+    Perform product research using web search and LLM analysis
     
     Args:
         request: Research request containing query and model parameters
@@ -181,68 +180,65 @@ async def perform_research(request: ResearchRequest) -> ResearchResponse:
     logger.info(f"Processing product research request: {request.query}")
     
     try:
-        # Initialize services
-        ollama_client = OllamaClient()
+        # Search for stores
+        logger.info("Starting store search with web search")
+        urls = await web_search.execute(
+            query=request.query,
+            engine="random",
+            max_results=10,
+            model=request.model
+        )
+        logger.info(f"Found {len(urls)} URLs")
         
-        async with ollama_client:
-            # Search for stores
-            logger.info("Starting store search with web search")
-            urls = await web_search.execute(
-                query=request.query,
-                engine="random",
-                max_results=10,
-                model=request.model  # Pass the model parameter from the request
+        if not urls:
+            logger.warning("No search results found")
+            return ResearchResponse(
+                product_name=request.query,
+                stores=[],
+                price_range={"min": "N/A", "max": "N/A"},
+                best_value={"name": "N/A", "url": "N/A", "price": "N/A", "description": "No stores found"},
+                common_features=[],
+                premium_options=[],
+                special_considerations=["No search results found for this product"],
+                result={"error": "No search results found"}
             )
-            logger.info(f"Found {len(urls)} URLs")
-            
-            if not urls:
-                logger.warning("No search results found")
-                return ResearchResponse(
-                    product_name=request.query,
-                    stores=[],
-                    price_range={"min": "N/A", "max": "N/A"},
-                    best_value={"name": "N/A", "url": "N/A", "price": "N/A", "description": "No stores found"},
-                    common_features=[],
-                    premium_options=[],
-                    special_considerations=["No search results found for this product"],
-                    result={"error": "No search results found"}
-                )
-            
-            # Convert URLs to store format with more context
-            stores = []
-            for url in urls:
-                # Extract domain name for store name
-                domain = url.split('/')[2] if len(url.split('/')) > 2 else url
-                stores.append({
-                    "url": url,
-                    "name": domain,
-                    "description": f"Online store found at {domain}",
-                    "search_rank": len(stores) + 1  # Add rank for context
-                })
-            
-            # Fetch detailed information for each store
-            logger.info("Starting detailed information gathering for stores")
-            detailed_stores = []
-            for store in stores:
-                logger.info(f"Fetching details for store: {store.get('name')}")
-                try:
-                    details = await fetch_product_details(store.get('url'))
-                    detailed_store = {**store, **details}
-                    detailed_stores.append(detailed_store)
-                    logger.debug(f"Store details: {detailed_store}")
-                except Exception as e:
-                    logger.error(f"Error fetching details for {store.get('url')}: {str(e)}")
-                    # Still include the store with basic info
-                    detailed_stores.append(store)
-            
-            # Generate response from Ollama using the system prompt
-            logger.info("Generating analysis with Ollama")
-            prompt = f"Analyze the following stores selling {request.query} in Montevideo:\n{json.dumps(detailed_stores, indent=2)}"
-            
-            logger.debug(f"Sending prompt to Ollama: {prompt}")
-            response = await ollama_client.generate(
+        
+        # Convert URLs to store format with more context
+        stores = []
+        for url in urls:
+            # Extract domain name for store name
+            domain = url.split('/')[2] if len(url.split('/')) > 2 else url
+            stores.append({
+                "url": url,
+                "name": domain,
+                "description": f"Online store found at {domain}",
+                "search_rank": len(stores) + 1  # Add rank for context
+            })
+        
+        # Fetch detailed information for each store
+        logger.info("Starting detailed information gathering for stores")
+        detailed_stores = []
+        for store in stores:
+            logger.info(f"Fetching details for store: {store.get('name')}")
+            try:
+                details = await fetch_product_details(store.get('url'))
+                detailed_store = {**store, **details}
+                detailed_stores.append(detailed_store)
+                logger.debug(f"Store details: {detailed_store}")
+            except Exception as e:
+                logger.error(f"Error fetching details for {store.get('url')}: {str(e)}")
+                # Still include the store with basic info
+                detailed_stores.append(store)
+        
+        # Generate response from Ollama using the system prompt
+        logger.info("Generating analysis with Ollama")
+        prompt = f"Analyze the following stores selling {request.query} in Montevideo:\n{json.dumps(detailed_stores, indent=2)}"
+        
+        logger.debug(f"Sending prompt to Ollama: {prompt}")
+        async with OllamaClient() as client:
+            response = await client.generate(
                 prompt=prompt,
-                system=RESEARCH_SYSTEM_PROMPT,  # Use system parameter for RAG context
+                system=RESEARCH_SYSTEM_PROMPT,
                 model=request.model,
                 max_tokens=request.max_tokens
             )

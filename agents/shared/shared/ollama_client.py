@@ -38,7 +38,7 @@ class OllamaClient:
             prompt: str,
             model: Optional[str] = None,
             system: Optional[str] = None,
-            temperature: float = 0.7,
+            temperature: float = 0.2,
             max_tokens: int = 2048
         ) -> str:
         """Generate text using the Ollama API.

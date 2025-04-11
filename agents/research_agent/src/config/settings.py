@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     # SerpAPI Configuration
     SERPAPI_API_KEY: str = os.getenv("SERPAPI_API_KEY")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
 
     # Server Configuration
     HOST: str = "0.0.0.0"
