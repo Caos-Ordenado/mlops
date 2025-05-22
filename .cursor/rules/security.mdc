@@ -7,7 +7,7 @@ alwaysApply: false
 
 ## Core Rules
 - Use latest Traefik versions and configurations
-- Local development uses HTTP (no TLS/HTTPS)
+- Local development and home server uses HTTP (no TLS/HTTPS)
 - Add 20-second timeout to all external requests
 - Use kubectl for cluster interactions
 - Traefik exposes admin (8080) and public (9080) ports

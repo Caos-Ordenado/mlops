@@ -22,12 +22,12 @@ async def init_database():
     """Initialize the database and create tables."""
     # Create database config
     config = DatabaseConfig(
-        postgres_host=os.getenv("POSTGRES_HOST", "home.server"),
+        postgres_host=os.getenv("POSTGRES_HOST", "postgres.shared.svc.cluster.local"),
         postgres_port=int(os.getenv("POSTGRES_PORT", "5432")),
         postgres_db=os.getenv("POSTGRES_DB", "web_crawler"),
         postgres_user=os.getenv("POSTGRES_USER", "admin"),
         postgres_password=os.getenv("POSTGRES_PASSWORD"),
-        redis_host=os.getenv("REDIS_HOST", "home.server"),
+        redis_host=os.getenv("REDIS_HOST", "redis.shared.svc.cluster.local"),
         redis_port=int(os.getenv("REDIS_PORT", "6379")),
         redis_db=int(os.getenv("REDIS_DB", "0")),
         redis_password=os.getenv("REDIS_PASSWORD"),

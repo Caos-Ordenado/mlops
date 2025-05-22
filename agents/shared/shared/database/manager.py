@@ -75,11 +75,34 @@ class DatabaseManager:
             else:
                 logger.info("Redis connection test successful")
                 
+            # Automatically initialize database schema if needed
+            await self._auto_initialize_database()
+                
             logger.info("Successfully initialized database connections")
             
         except Exception as e:
             logger.error(f"Failed to initialize database connections: {str(e)}")
             raise
+
+    async def _auto_initialize_database(self) -> None:
+        """Automatically initialize database schema if needed."""
+        try:
+            # Install pgvector extension (idempotent)
+            logger.debug("Installing pgvector extension...")
+            async with self.engine.begin() as conn:
+                from sqlalchemy import text
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            logger.debug("pgvector extension ensured")
+            
+            # Create tables if they don't exist (idempotent)
+            logger.debug("Creating database tables if needed...")
+            await self.create_tables()
+            logger.info("Database schema initialization complete")
+            
+        except Exception as e:
+            logger.warning(f"Database auto-initialization failed: {str(e)}")
+            logger.warning("This is normal if tables already exist or user lacks permissions")
+            # Don't fail the entire init - the database might already be set up
 
     async def create_tables(self) -> None:
         """Create all database tables."""

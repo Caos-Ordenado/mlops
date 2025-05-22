@@ -39,7 +39,7 @@ class OllamaClient:
             model: Optional[str] = None,
             system: Optional[str] = None,
             temperature: float = 0.2,
-            max_tokens: int = 2048
+            max_tokens: int = 4096
         ) -> str:
         """Generate text using the Ollama API.
         
@@ -48,7 +48,7 @@ class OllamaClient:
             model: The model to use. Defaults to the one specified in constructor.
             system: Optional system prompt
             temperature: Sampling temperature (default: 0.7)
-            max_tokens: Maximum tokens to generate (default: 2048)
+            max_tokens: Maximum tokens to generate (default: 4096)
             
         Returns:
             str: The generated text

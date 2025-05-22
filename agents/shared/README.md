@@ -198,13 +198,13 @@ POSTGRES_HOST=home.server
 POSTGRES_PORT=5432
 POSTGRES_DB=web_crawler
 POSTGRES_USER=admin
-POSTGRES_PASSWORD=your_password
+POSTGRES_PASSWORD=<get_password_from_secret_manager>
 
 # Redis Configuration
 REDIS_HOST=home.server
 REDIS_PORT=6379
 REDIS_DB=0
-REDIS_PASSWORD=your_password
+REDIS_PASSWORD=<get_password_from_secret_manager>
 
 # Logging Configuration
 LOG_LEVEL=DEBUG  # DEBUG, INFO, WARNING, ERROR, CRITICAL

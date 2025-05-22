@@ -10,9 +10,9 @@ alwaysApply: true
 - Service name: web-crawler
 - Path prefix: /crawler
 - Access points:
-  - API: http://home.server/crawler/
-  - Swagger UI: http://home.server/crawler/docs
-  - ReDoc UI: http://home.server/crawler/redoc
+  - API: http://home.server:9080/crawler/
+  - Swagger UI: http://home.server:9080/crawler/docs
+  - ReDoc UI: http://home.server:9080/crawler/redoc
 
 ## Configuration
 - Memory threshold: 80% (configurable)

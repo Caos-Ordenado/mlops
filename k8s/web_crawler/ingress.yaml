@@ -7,11 +7,10 @@ spec:
   entryPoints:
     - web
   routes:
-    - kind: Rule
-      match: PathPrefix(`/crawler`)
+    - match: PathPrefix(`/crawler`)
+      kind: Rule
       middlewares:
         - name: crawler-stripprefix
-          namespace: shared
       services:
         - name: web-crawler
           port: 8000

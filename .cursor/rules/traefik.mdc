@@ -1,19 +1,19 @@
 ---
 description: 
-globs: 
+globs: *traefik*,**traefik**
 alwaysApply: false
 ---
 # Traefik Configuration Rules
 
 ## Core Rules
-- Ignore TCP/UDP CRD warnings unless needed
-- Use path-based routing instead of NodePorts
-- Use latest Traefik middlewares and configurations
+- Installed through helm
+- Always use the Traefik version 3.4.0
+- [install.sh](mdc:k8s/traefik/install.sh) its how to update
 
 ## Service Configuration
-- HTTP services: Use path-based routing
+- Configuration file [values.yaml](mdc:k8s/traefik/values.yaml)
+- Traefik Dashboard Exposed from home.server:30088
+- HTTP services: Always Use path-based routing 
 - TCP services (databases):
   - PostgreSQL: port 5432
   - Redis: port 6379
-- No path/prefix needed for TCP services
-- No HTTP middlewares for TCP routing 

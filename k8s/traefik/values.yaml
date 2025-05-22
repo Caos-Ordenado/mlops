@@ -1,0 +1,121 @@
+deployment:
+  replicas: 1
+  podAnnotations: {}
+  podLabels: {}
+
+image:
+  tag: v3.4.0
+  pullPolicy: IfNotPresent
+
+service:
+  enabled: true
+  type: NodePort
+  ports:
+    web:
+      port: 9080
+      nodePort: 30080
+    traefik:
+      port: 8080
+      nodePort: 31080
+    postgres:
+      port: 5432
+      nodePort: 32080
+    redis:
+      port: 6379
+      nodePort: 32081
+
+ports:
+  web:
+    port: 9080
+    expose:
+      enabled: true
+    exposedPort: 9080
+    protocol: TCP
+  traefik:
+    port: 8080
+    expose:
+      enabled: true
+    exposedPort: 8080
+    protocol: TCP
+  postgres:
+    port: 5432
+    expose:
+      enabled: true
+    exposedPort: 5432
+    protocol: TCP
+  redis:
+    port: 6379
+    expose:
+      enabled: true
+    exposedPort: 6379
+    protocol: TCP
+  websecure:
+    port: 8443
+    expose:
+      enabled: false
+    exposedPort: 8443
+    protocol: TCP
+
+additionalArguments:
+  - "--api.dashboard=true"
+  - "--api.insecure=true"
+  - "--api.debug=true"
+  - "--providers.kubernetescrd.allowemptyservices=true"
+  - "--providers.kubernetescrd.allowcrossnamespace=true"
+  - "--providers.kubernetescrd.allowexternalnameservices=true"
+  - "--providers.kubernetescrd.namespaces=*"
+  - "--providers.kubernetesingress.allowemptyservices=true"
+  - "--log.level=DEBUG"
+  - "--accesslog.format=common"
+  - "--accesslog.fields.defaultmode=keep"
+  - "--accesslog.fields.names.ClientUsername=drop"
+  - "--accesslog.fields.headers.defaultmode=keep"
+  - "--accesslog.fields.headers.names.User-Agent=keep"
+  - "--accesslog.fields.headers.names.Authorization=drop"
+  - "--accesslog.fields.headers.names.Content-Type=keep"
+  - "--accesslog.fields.headers.names.Host=keep"
+  - "--accesslog.fields.headers.names.X-Forwarded-For=keep"
+  - "--accesslog.fields.headers.names.X-Real-IP=keep"
+  - "--accesslog.fields.headers.names.X-Forwarded-Proto=keep"
+  - "--accesslog.fields.headers.names.X-Forwarded-Host=keep"
+  - "--metrics.prometheus=false"
+  - "--ping=true"
+  - "--entryPoints.postgres.address=:5432/tcp"
+  - "--entryPoints.redis.address=:6379/tcp"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+    allowExternalNameServices: true
+    allowEmptyServices: true
+    namespaces: ["*"]
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: true
+    allowEmptyServices: true
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    matchRule: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
+    entryPoints:
+      - traefik
+    middlewares:
+      - name: traefik-dashboard-stripprefix
+        namespace: kube-system
+
+middlewares:
+  dashboard-stripprefix:
+    stripPrefix:
+      prefixes:
+        - /dashboard
+        - /api 
