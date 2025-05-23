@@ -8,25 +8,8 @@ image:
   pullPolicy: IfNotPresent
 
 service:
+  enabled: true
   type: NodePort
-  spec:
-    ports:
-      - name: web
-        port: 9080
-        nodePort: 30080
-        targetPort: web
-      - name: traefik
-        port: 8080
-        nodePort: 31080
-        targetPort: traefik
-      - name: postgres
-        port: 5432
-        nodePort: 32080
-        targetPort: postgres
-      - name: redis
-        port: 6379
-        nodePort: 32081
-        targetPort: redis
 
 ports:
   web:
@@ -34,24 +17,28 @@ ports:
     expose:
       enabled: true
     exposedPort: 9080
+    nodePort: 30080
     protocol: TCP
   traefik:
     port: 8080
     expose:
       enabled: true
     exposedPort: 8080
+    nodePort: 31080
     protocol: TCP
   postgres:
     port: 5432
     expose:
       enabled: true
     exposedPort: 5432
+    nodePort: 32080
     protocol: TCP
   redis:
     port: 6379
     expose:
       enabled: true
     exposedPort: 6379
+    nodePort: 32081
     protocol: TCP
   websecure:
     port: 8443
