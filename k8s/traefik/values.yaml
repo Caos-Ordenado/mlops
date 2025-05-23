@@ -4,25 +4,29 @@ deployment:
   podLabels: {}
 
 image:
-  tag: v3.4.0
+  tag: v3.3.6
   pullPolicy: IfNotPresent
 
 service:
-  enabled: true
   type: NodePort
-  ports:
-    web:
-      port: 9080
-      nodePort: 30080
-    traefik:
-      port: 8080
-      nodePort: 31080
-    postgres:
-      port: 5432
-      nodePort: 32080
-    redis:
-      port: 6379
-      nodePort: 32081
+  spec:
+    ports:
+      - name: web
+        port: 9080
+        nodePort: 30080
+        targetPort: web
+      - name: traefik
+        port: 8080
+        nodePort: 31080
+        targetPort: traefik
+      - name: postgres
+        port: 5432
+        nodePort: 32080
+        targetPort: postgres
+      - name: redis
+        port: 6379
+        nodePort: 32081
+        targetPort: redis
 
 ports:
   web:
@@ -59,27 +63,9 @@ ports:
 additionalArguments:
   - "--api.dashboard=true"
   - "--api.insecure=true"
-  - "--api.debug=true"
-  - "--providers.kubernetescrd.allowemptyservices=true"
-  - "--providers.kubernetescrd.allowcrossnamespace=true"
-  - "--providers.kubernetescrd.allowexternalnameservices=true"
-  - "--providers.kubernetescrd.namespaces=*"
-  - "--providers.kubernetesingress.allowemptyservices=true"
   - "--log.level=DEBUG"
-  - "--accesslog.format=common"
-  - "--accesslog.fields.defaultmode=keep"
-  - "--accesslog.fields.names.ClientUsername=drop"
-  - "--accesslog.fields.headers.defaultmode=keep"
-  - "--accesslog.fields.headers.names.User-Agent=keep"
-  - "--accesslog.fields.headers.names.Authorization=drop"
-  - "--accesslog.fields.headers.names.Content-Type=keep"
-  - "--accesslog.fields.headers.names.Host=keep"
-  - "--accesslog.fields.headers.names.X-Forwarded-For=keep"
-  - "--accesslog.fields.headers.names.X-Real-IP=keep"
-  - "--accesslog.fields.headers.names.X-Forwarded-Proto=keep"
-  - "--accesslog.fields.headers.names.X-Forwarded-Host=keep"
-  - "--metrics.prometheus=false"
-  - "--ping=true"
+  - "--entryPoints.web.address=:9080"
+  - "--entryPoints.traefik.address=:8080"
   - "--entryPoints.postgres.address=:5432/tcp"
   - "--entryPoints.redis.address=:6379/tcp"
 
@@ -94,14 +80,7 @@ resources:
 providers:
   kubernetesCRD:
     enabled: true
-    allowCrossNamespace: true
-    allowExternalNameServices: true
-    allowEmptyServices: true
-    namespaces: ["*"]
-  kubernetesIngress:
-    enabled: true
-    allowExternalNameServices: true
-    allowEmptyServices: true
+    namespaces: []  # Watch all namespaces
 
 ingressRoute:
   dashboard:

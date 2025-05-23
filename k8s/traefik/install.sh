@@ -19,13 +19,14 @@ helm upgrade --install traefik traefik/traefik \
   --debug \
   --wait
 
-echo "Applying Traefik dashboard service and IngressRoute..."
-kubectl apply -f "${SCRIPT_DIR}/traefik-dashboard-service.yaml"
-kubectl apply -f "${SCRIPT_DIR}/dashboard-ingressroute.yaml"
+echo "Applying TCP IngressRoutes for PostgreSQL and Redis..."
+kubectl apply -f "${SCRIPT_DIR}/tcp-ingressroutes.yaml"
 
-echo "Restarting Traefik deployment to ensure new config is loaded..."
-kubectl rollout restart deployment traefik -n kube-system
+echo "Patching service with correct NodePorts..."
+kubectl patch svc traefik -n kube-system -p '{"spec":{"ports":[{"name":"web","port":9080,"nodePort":30080,"targetPort":"web","protocol":"TCP"},{"name":"traefik","port":8080,"nodePort":31080,"targetPort":"traefik","protocol":"TCP"},{"name":"postgres","port":5432,"nodePort":32080,"targetPort":"postgres","protocol":"TCP"},{"name":"redis","port":6379,"nodePort":32081,"targetPort":"redis","protocol":"TCP"}]}}' || true
 
 echo "Traefik installation completed!"
-echo "Dashboard available at: http://home.server:30080/dashboard/"
+echo "Dashboard available at: http://home.server:31080/"
 echo "Web services available at: http://home.server:30080/"
+echo "PostgreSQL available at: home.server:32080"
+echo "Redis available at: home.server:32081"
