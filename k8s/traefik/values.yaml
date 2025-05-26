@@ -19,6 +19,13 @@ ports:
     exposedPort: 9080
     nodePort: 30080
     protocol: TCP
+  langflow:
+    port: 7860
+    expose:
+      enabled: true
+    exposedPort: 7860
+    nodePort: 30081
+    protocol: TCP
   traefik:
     port: 8080
     expose:
@@ -55,6 +62,7 @@ additionalArguments:
   - "--entryPoints.traefik.address=:8080"
   - "--entryPoints.postgres.address=:5432/tcp"
   - "--entryPoints.redis.address=:6379/tcp"
+  - "--entryPoints.langflow.address=:7860"
 
 resources:
   requests:

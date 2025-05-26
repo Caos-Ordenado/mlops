@@ -18,7 +18,7 @@ alwaysApply: true
 ## Service Clients
 
 ### Web Crawler Client
-- Base URL: http://home.server:9080/crawler
+- Base URL: http://home.server:30080/crawler
 - Features:
   - Async/await interface
   - Health checking
@@ -26,7 +26,7 @@ alwaysApply: true
   - Error handling
 
 ### Ollama Client
-- Base URL: http://home.server:9080/ollama
+- Base URL: http://home.server:30080/ollama
 - Async interface for LLM interactions
 - Default model: llama3.1
 

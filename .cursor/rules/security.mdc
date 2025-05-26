@@ -10,7 +10,6 @@ alwaysApply: false
 - Local development and home server uses HTTP (no TLS/HTTPS)
 - Add 20-second timeout to all external requests
 - Use kubectl for cluster interactions
-- Traefik exposes admin (8080) and public (9080) ports
 
 ## Secrets Management
 - Manage all secrets through k8s/secrets/
