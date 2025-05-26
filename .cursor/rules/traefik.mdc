@@ -12,7 +12,7 @@ alwaysApply: false
 
 ## Service Configuration
 - Configuration file [values.yaml](mdc:k8s/traefik/values.yaml)
-- Traefik Dashboard Exposed from home.server:30088
+- Traefik Dashboard Exposed from home.server:31080
 - HTTP services: Always Use path-based routing 
 - TCP services (databases):
   - PostgreSQL: port 5432

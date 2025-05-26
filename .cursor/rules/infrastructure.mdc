@@ -18,6 +18,7 @@ alwaysApply: true
    - Redis service
    - PostgreSQL service
    - Web crawler service
+   - Langflow
 
 3. argocd:
    - ArgoCD deployment (v2.8.4)
@@ -29,11 +30,12 @@ alwaysApply: true
 ```
 k8s/
 ├── argocd/         # ArgoCD deployment
+├── langflow/       # Langflow
 ├── ollama/         # Ollama service
 ├── secrets/        # Secret management
 ├── shared/         # Shared infrastructure
 ├──── postgres/     # Postgres
-├──── redis/        # Postgres
+├──── redis/        # Redis
 ├── traefik/        # Ingress controller
 └── kustomization.yaml
 ``` 
