@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: langflow
-        image: langflowai/langflow:latest
+        image: langflowai/langflow:1.4.2-py3.10
         ports:
         - containerPort: 7860
         resources:
@@ -54,6 +54,21 @@ spec:
           value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)"
         - name: LANGFLOW_REDIS_URL
           value: "redis://:$(REDIS_PASSWORD)@redis:6379/0"
+        - name: LANGFLOW_AUTO_LOGIN
+          valueFrom:
+            secretKeyRef:
+              name: langflow-secret
+              key: LANGFLOW_AUTO_LOGIN
+        - name: LANGFLOW_SUPERUSER
+          valueFrom:
+            secretKeyRef:
+              name: langflow-secret
+              key: LANGFLOW_SUPERUSER
+        - name: LANGFLOW_SUPERUSER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: langflow-secret
+              key: LANGFLOW_SUPERUSER_PASSWORD
         livenessProbe:
           httpGet:
             path: /health

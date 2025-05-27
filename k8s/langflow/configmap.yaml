@@ -8,22 +8,17 @@ data:
   LANGFLOW_HOST: "0.0.0.0"
   LANGFLOW_PORT: "7860"
   LANGFLOW_WORKERS: "1"
-  LANGFLOW_LOG_LEVEL: "INFO"
+  LANGFLOW_LOG_LEVEL: "DEBUG"
   
   # Cache Configuration  
-  LANGFLOW_CACHE_TYPE: "redis"
+  LANGFLOW_CACHE_TYPE: "async"
   
   # Security
   LANGFLOW_SECRET_KEY: "your-secret-key-change-this"
   LANGFLOW_JWT_SECRET: "your-jwt-secret-change-this"
   
-  # API Configuration
-  LANGFLOW_AUTO_LOGIN: "false"
-  LANGFLOW_SUPERUSER: "admin"
-  LANGFLOW_SUPERUSER_PASSWORD: "admin123"
-  
   # Performance
-  LANGFLOW_ASYNC_MODE: "true"
+  LANGFLOW_ASYNC_MODE: "false"
   LANGFLOW_BACKEND_ONLY: "false"
   LANGFLOW_OPEN_BROWSER: "false"
   

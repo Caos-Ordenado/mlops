@@ -33,11 +33,27 @@ Key configurations:
 - `LANGFLOW_DATABASE_URL`: PostgreSQL connection
 - `LANGFLOW_REDIS_URL`: Redis connection for caching
 
-### Resources
+### Sensitive Credentials (Kubernetes Secret)
 
-- **CPU**: 200m requests, 500m limits
-- **Memory**: 512Mi requests, 1Gi limits
-- **Storage**: Uses shared PostgreSQL for persistence
+The following sensitive values are now managed via a Kubernetes Secret (`langflow-secret`):
+- `LANGFLOW_AUTO_LOGIN`
+- `LANGFLOW_SUPERUSER`
+- `LANGFLOW_SUPERUSER_PASSWORD`
+
+These are **not** set in the ConfigMap. Instead, they are injected into the deployment from the secret.
+
+#### How to Generate and Apply the Secret
+
+1. Generate the secret using the provided script:
+   ```bash
+   cd k8s/secrets/scripts
+   ./generate-secrets.sh
+   # Select the Langflow template and provide the values when prompted
+   ```
+2. Apply the generated secret:
+   ```bash
+   kubectl apply -f ../generated/langflow.yaml
+   ```
 
 ## Deployment
 
@@ -69,7 +85,7 @@ kubectl get ingressroute -n shared langflow
 Once deployed, Langflow will be available at:
 
 - **URL**: http://home.server:30081
-- **Default Login**: admin / admin123
+- **Default Login**: (as set in your secret)
 
 ## Troubleshooting
 
@@ -111,12 +127,10 @@ The deployment includes:
 
 ## Security Notes
 
-⚠️ **Important**: Change the default credentials in production!
-
-Update these values in `configmap.yaml`:
-- `LANGFLOW_SECRET_KEY`
-- `LANGFLOW_JWT_SECRET`
-- `LANGFLOW_SUPERUSER_PASSWORD`
+⚠️ **Important**: Sensitive credentials are now managed via Kubernetes secrets (`langflow-secret`).
+- Do **not** set `LANGFLOW_AUTO_LOGIN`, `LANGFLOW_SUPERUSER`, or `LANGFLOW_SUPERUSER_PASSWORD` in the ConfigMap.
+- Rotate secrets regularly and restrict access to secret manifests.
+- Update these values in the secret template and regenerate as needed.
 
 ## Integration with Custom Agents
 

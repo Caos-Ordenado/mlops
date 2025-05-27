@@ -19,17 +19,18 @@ fi
 
 echo "✅ Connected to Kubernetes cluster"
 
-# Update Traefik configuration first
-echo "🔧 Updating Traefik configuration for Langflow port..."
-cd k8s/traefik && helm upgrade traefik traefik/traefik -f values.yaml -n kube-system
-cd ../..
+# # Update Traefik configuration first
+# echo "🔧 Updating Traefik configuration for Langflow port..."
+# cd ../traefik && helm upgrade traefik traefik/traefik -f values.yaml -n kube-system
+# cd ../langflow
 
-echo "⏳ Waiting for Traefik to be ready..."
-kubectl wait --for=condition=available --timeout=300s deployment/traefik -n kube-system
+# echo "⏳ Waiting for Traefik to be ready..."
+# kubectl wait --for=condition=available --timeout=300s deployment/traefik -n kube-system
 
 # Deploy Langflow
 echo "📦 Deploying Langflow components..."
-kubectl apply -k k8s/langflow/
+kubectl apply -k .
+kubectl rollout restart deployment/langflow -n shared
 
 echo "⏳ Waiting for Langflow deployment to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/langflow -n shared

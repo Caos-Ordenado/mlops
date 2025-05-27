@@ -6,10 +6,12 @@ alwaysApply: true
 # Database Patterns
 
 ## Repository Pattern
-- Each model has a repository class
-- Base repository provides CRUD operations
-- Redis used as cache layer
-- PostgreSQL as source of truth
+- Each model has a repository class.
+- Base repository provides CRUD operations.
+- Redis used as cache layer.
+- PostgreSQL as source of truth.
+- All agents must use the repository pattern for database access. Do not use custom storage classes.
+
 
 ## Cache Strategy
 ```python
@@ -34,6 +36,7 @@ def to_redis_data(self) -> dict:
 def from_redis_data(cls, data: dict) -> Self:
     """Create from Redis data"""
 ```
+- All models persisted in Redis must implement `to_redis_data` and `from_redis_data`.
 
 ## Repository Structure
 ```python

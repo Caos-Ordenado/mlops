@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Agent Development Rules
+## General
+- All agents must use the shared logging system (`loguru` via `shared.logging`).
+- All agents must use async context managers for service clients (web crawler, Ollama, etc).
+- All agents must use the repository pattern for database access (see `database.mdc`).
+- All agents must document new features in their respective `README.md`.
+- All agents must handle connection and database errors gracefully.
+- All agents must use environment variables for configuration, not hardcoded values.
+- All agents must follow the cache strategy and best practices described in `database.mdc`.
+
+## Example Usage
+
+```python
+from shared.logging import setup_logger
+logger = setup_logger("my_agent")
+
+from shared.web_crawler_client import WebCrawlerClient
+async with WebCrawlerClient() as client:
+    ...
+
+from shared.ollama_client import OllamaClient
+async with OllamaClient() as llm:
+    ...
+```
+```
