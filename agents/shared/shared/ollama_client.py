@@ -14,7 +14,7 @@ logger = setup_logger(__name__)
 class OllamaClient:
     """Client for interacting with Ollama LLM service."""
     
-    def __init__(self, base_url: str = "http://home.server:9080/ollama"):
+    def __init__(self, base_url: str = "http://home.server:30080/ollama"):
         """Initialize the Ollama client.
         
         Args:
