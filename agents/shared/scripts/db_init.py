@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy import text
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 # Add the parent directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -20,38 +22,35 @@ from shared import DatabaseContext, DatabaseConfig
 
 async def create_databases(config: DatabaseConfig):
     """Create the required databases if they don't exist."""
-    # Create a temporary config for connecting to the default postgres database
-    temp_config = DatabaseConfig(
-        postgres_host=config.postgres_host,
-        postgres_port=config.postgres_port,
-        postgres_db="postgres",  # Connect to default postgres database
-        postgres_user=config.postgres_user,
-        postgres_password=config.postgres_password,
-        redis_host=config.redis_host,
-        redis_port=config.redis_port,
-        redis_db=config.redis_db,
-        redis_password=config.redis_password,
-        echo_sql=True
-    )
-    
     print("Creating databases if they don't exist...")
-    async with DatabaseContext(config=temp_config) as db:
-        async with db.db.engine.begin() as conn:
-            # Create web_crawler database
-            result = await conn.execute(text("SELECT 1 FROM pg_database WHERE datname = 'web_crawler'"))
-            if not result.fetchone():
-                await conn.execute(text("CREATE DATABASE web_crawler"))
-                print("Created 'web_crawler' database")
-            else:
-                print("Database 'web_crawler' already exists")
-            
-            # Create langflow database
-            result = await conn.execute(text("SELECT 1 FROM pg_database WHERE datname = 'langflow'"))
-            if not result.fetchone():
-                await conn.execute(text("CREATE DATABASE langflow"))
-                print("Created 'langflow' database")
-            else:
-                print("Database 'langflow' already exists")
+    conn = psycopg2.connect(
+        host=config.postgres_host,
+        port=config.postgres_port,
+        dbname="postgres",
+        user=config.postgres_user,
+        password=config.postgres_password,
+    )
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    cur = conn.cursor()
+
+    # Create web_crawler database
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = 'web_crawler'")
+    if not cur.fetchone():
+        cur.execute("CREATE DATABASE web_crawler")
+        print("Created 'web_crawler' database")
+    else:
+        print("Database 'web_crawler' already exists")
+
+    # Create langflow database
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = 'langflow'")
+    if not cur.fetchone():
+        cur.execute("CREATE DATABASE langflow")
+        print("Created 'langflow' database")
+    else:
+        print("Database 'langflow' already exists")
+
+    cur.close()
+    conn.close()
 
 async def init_database():
     """Initialize the database and create tables."""

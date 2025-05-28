@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: web-crawler-config
-  namespace: shared
+  namespace: default
 data:
   # Crawler Settings
   CRAWLER_MAX_PAGES: "1000"

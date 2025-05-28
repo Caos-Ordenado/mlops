@@ -24,13 +24,13 @@ alwaysApply: true
 ## Monitoring
 ```bash
 # Status check
-kubectl get pods -n shared -l app=web-crawler
+kubectl get pods -n default -l app=web-crawler
 
 # Logs
-kubectl logs -n shared -l app=web-crawler --tail=100
+kubectl logs -n default -l app=web-crawler --tail=100
 
 # Configuration
-kubectl get configmap -n shared web-crawler-config -o yaml
+kubectl get configmap -n default web-crawler-config -o yaml
 ```
 
 ## Best Practices

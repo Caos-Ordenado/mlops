@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: langflow-config
-  namespace: shared
+  namespace: default
 data:
   # Langflow Configuration
   LANGFLOW_HOST: "0.0.0.0"

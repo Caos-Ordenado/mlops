@@ -109,6 +109,23 @@ echo -e "${GREEN}Generating ${output_file}${NC}"
 
 replace_placeholders "${TEMPLATE_DIR}/${template_file}" "$output_file"
 
+# Auto-apply logic
+case "$output_file" in
+  *langflow.yaml|*web-crawler.yaml)
+    echo -e "${GREEN}Applying $output_file to namespace 'default'...${NC}"
+    kubectl apply -f "$output_file" -n default
+    ;;
+  *postgres.yaml|*redis.yaml)
+    echo -e "${GREEN}Applying $output_file to namespaces 'default' and 'shared'...${NC}"
+    kubectl apply -f "$output_file" -n default
+    kubectl apply -f "$output_file" -n shared
+    ;;
+  *argocd.yaml)
+    echo -e "${GREEN}Applying $output_file to namespace 'argocd'...${NC}"
+    kubectl apply -f "$output_file" -n argocd
+    ;;
+esac
+
 echo -e "${GREEN}Secret generated successfully!${NC}"
 echo "To apply the secret to your cluster, run:"
 echo -e "${YELLOW}kubectl apply -f ${output_file}${NC}" 

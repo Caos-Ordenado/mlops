@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: langflow
-  namespace: shared
+  namespace: default
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: langflow
-        image: langflowai/langflow:1.4.2-py3.10
+        image: langflowai/langflow:1.4.2
         ports:
         - containerPort: 7860
         resources:
@@ -51,9 +51,9 @@ spec:
               key: redis-password
         # Construct database URLs using the secret values
         - name: LANGFLOW_DATABASE_URL
-          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)"
+          value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.shared.svc.cluster.local:5432/$(POSTGRES_DB)"
         - name: LANGFLOW_REDIS_URL
-          value: "redis://:$(REDIS_PASSWORD)@redis:6379/0"
+          value: "redis://:$(REDIS_PASSWORD)@redis.shared.svc.cluster.local:6379/0"
         - name: LANGFLOW_AUTO_LOGIN
           valueFrom:
             secretKeyRef:

@@ -17,14 +17,14 @@ alwaysApply: true
 2. shared:
    - Redis service
    - PostgreSQL service
-   - Web crawler service
-   - Langflow
 
 3. argocd:
    - ArgoCD deployment (v2.8.4)
 
 4. default:
    - Ollama LLM service
+   - Web crawler service
+   - Langflow
 
 ## Directory Structure
 ```
