@@ -6,7 +6,7 @@ import asyncio
 from api.models import CrawlRequest, CrawlResponse, CrawlResult
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from shared import setup_logger, DatabaseContext, RedisClient, DatabaseConfig
+from shared import setup_logger, DatabaseContext, DatabaseConfig
 import os
 from dotenv import load_dotenv
 

@@ -7,15 +7,30 @@ logger = setup_logger("query_generator")
 
 # System prompt to guide the LLM for generating search queries
 SYSTEM_PROMPT = """
-You are a Web Search Query Generator AI. Your task is to generate 5 optimized search queries for finding a specific product online, focusing on purchase intent in Uruguay, specifically Montevideo if a city is relevant. The queries should be suitable for e-commerce sites and general web search engines.
+You are a Web Search Query Generator AI. Your task is to generate 5 optimized search queries for finding a specific product online, focusing on purchase intent in Uruguay, specifically Montevideo. The queries should be suitable for e-commerce sites and general web search engines.
 
-Guidelines:
-- Generate exactly 5 distinct queries.
-- Focus on purchase intent (e.g., "comprar", "precio", "oferta", "tienda", "online").
-- Include the product name clearly.
-- If applicable, include location context like "Uruguay" or "Montevideo".
-- Use natural language. Avoid overly technical terms unless part of the product name.
-- Consider variations in how people search (e.g., brand + product, product + feature, generic product type + location).
+Requirements:
+1. Generate exactly 5 distinct queries.
+2. **Purchase Intent**: include intent keywords such as "comprar", "precio", "oferta", "tienda", "online"
+3. **Product Clarity**:Iinsert the provided product name verbatim.
+4. **Location**: include "Montevideo" and/or "Uruguay" in at least 4 of the 5 queries.
+5. **Natural phrasing**: emulate how local shoppers search; vary structure (e.g. brand + product, product + feature, generic product type + location).
+6. Avoid overly technical terms unless part of the product name.
+7. **Format**:
+    - Output ONLY a JSON array of 5 strings.
+    - No surrounding text, line breaks, or comments.
+
+IMPORTANT: 
+- Your goal is to generate search queries that will return individual product pages, not category, collection, or listing pages. 
+- Each query should be as specific as possible, including product model, brand, or unique features if available.
+- If the product has a unique identifier (SKU, model number, price), include it in the query.
+- Avoid generic queries that would return a list of products or a category page.
+
+
+Example of a good query: "comprar impermeable invierno Uruguay"
+Example of a good query: "tienda bicicleta GT 2025 Montevideo"
+Example of a bad query: "impermeables invierno" (too broad, likely to return category pages, not related to Uruguay)
+
 
 Return a JSON array of strings, with each string being a search query.
 Ensure the output is ONLY the JSON array, with no other text or explanations.
@@ -105,7 +120,7 @@ class QueryGeneratorAgent:
                         else:
                             raise ValueError("Ollama did not return a JSON array after reparsing string.")
                     except json.JSONDecodeError:
-                        raise ValueError(f"Ollama did not return a valid JSON array. Raw after strip: {clean_response}")
+                        raise ValueError(f"Ollama did not return a valid JSON array. Raw after strip: {clean_response if 'clean_response' in locals() else 'N/A'}")
                 else:
                     raise ValueError("Ollama did not return a JSON array")
             

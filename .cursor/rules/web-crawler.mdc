@@ -6,7 +6,7 @@ alwaysApply: true
 # Web Crawler Configuration
 
 ## Deployment
-- Namespace: shared
+- Namespace: default
 - Service name: web-crawler
 - Path prefix: /crawler
 - Access points:

@@ -29,6 +29,9 @@ spec:
         - configMapRef:
             name: web-crawler-config
         env:
+        # PostgreSQL host
+        - name: POSTGRES_HOST
+          value: "postgres.shared.svc.cluster.local"
         # PostgreSQL credentials from existing secret
         - name: POSTGRES_USER
           valueFrom:
@@ -45,6 +48,9 @@ spec:
             secretKeyRef:
               name: postgres-secrets
               key: POSTGRES_DB
+        # Redis host
+        - name: REDIS_HOST
+          value: "redis.shared.svc.cluster.local"
         # Redis credentials from existing secret
         - name: REDIS_PASSWORD
           valueFrom:

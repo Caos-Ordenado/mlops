@@ -9,11 +9,18 @@ logger = setup_logger("query_validator")
 # System prompt to guide the LLM for validating search queries
 QUERY_VALIDATOR_SYSTEM_PROMPT = """
 You are a Search Query Validator AI. Your task is to analyze a list of search queries and determine if each query is valid based on the following criteria for finding a product in Uruguay/Montevideo:
-- The query must clearly state purchase intent (e.g., using words like "comprar", "precio", "oferta", "tienda", "online", "adquirir").
+- The query must clearly state purchase intent (e.g., using words like "comprar", "precio", "oferta", "tienda", "online", "adquirir", "descubre", "ecommerce", "tienda", "venta").
 - The query should be specific enough to target a particular product or a narrow range of products, not overly broad categories if avoidable.
 - The query should be well-formed and make sense in Spanish (Uruguayan context if applicable).
 - The query should not be a question asking for information (e.g., "cuál es el mejor...") but rather a direct search term for finding items to buy.
 - Avoid subjective terms like "mejor", "bueno", "barato" unless they are part of a very common buying phrase and don't make the query overly broad or unconfirmable for purchase intent.
+
+
+IMPORTANT: Only validate queries that are likely to return individual product pages, not category or listing pages.
+- Reject queries that are too generic or likely to return a list of products.
+- Accept queries that are specific to a single product, model, or variant.
+- Example of a valid query: "comprar impermeable invierno Columbia modelo XYZ en Montevideo"
+- Example of an invalid query: "impermeables invierno Uruguay"
 
 Input will be a JSON array of query strings.
 
@@ -67,7 +74,7 @@ def strip_json_code_block(text: str) -> str:
     return text
 
 class QueryValidatorAgent:
-    def __init__(self, model_name="phi3", temperature=0.0):
+    def __init__(self, model_name="phi3", temperature=0.1):
         self.model_name = model_name
         self.temperature = temperature
         self.llm_client = OllamaClient()

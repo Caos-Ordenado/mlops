@@ -45,7 +45,7 @@ def remove_json_comments(s):
     return s
 
 class ProductPageCandidateIdentifierAgent:
-    def __init__(self, model_name="phi3", temperature=0.0):
+    def __init__(self, model_name="phi3", temperature=0.1):
         self.model_name = model_name
         self.temperature = temperature
         logger.info(f"ProductPageCandidateIdentifierAgent initialized with model: {model_name}, temp: {temperature}")
@@ -62,8 +62,30 @@ class ProductPageCandidateIdentifierAgent:
 You are an AI assistant that analyzes web page content (title, URL, and a snippet of text) to determine if it's a product page, a category page, a blog post, or 'other'.
 You are also given the original product name the user is searching for: "{product_name}"
 
+IMPORTANT GEOGRAPHIC FILTERING REQUIREMENTS:
+- Only consider results for Uruguay.
+- Exclude any URL where the domain ends with a country code that is not .uy (e.g., .ar, .es, .pt, .cl, .mx, .br, etc.)
+- If the domain is .com, .net, .org, etc. (no country code), only accept if the URL path or domain contains 'uruguay', '/uy/', or another clear Uruguay indicator like Montevideo.
+- If the URL does not have any Uruguay indicator, EXCLUDE it.
+- Only classify as PRODUCT, CATEGORY, BLOG, or OTHER if the URL passes these Uruguay checks; otherwise, return page_type: 'EXCLUDE_NON_URUGUAY'.
+- Never include or classify non-Uruguay results, even if the product matches.
+
+Examples:
+VALID:
+- https://www.climasyviajes.com/clima/uruguay  (contains 'uruguay' in the path)
+- https://www.compracompras.com/uy/lista/202381/pegamentos/  (contains '/uy/' in the path)
+- https://paraguas.com.uy/producto/paraguas-vicenzo-windproof/ (domain ends with .uy)
+INVALID:
+- https://www.montagne.com.ar/categoria/12-camperas-de-hombre (.ar domain)
+- https://www.decathlon.es/es/colecciones/calzado-impermeable (.es domain and /es/ path)
+- https://shopix.com.ar/comprar-campera-nike-impermeable_pg_2 (.ar domain)
+- https://www.campingcenter.com.ar/ropa-y-calzado/mujer/impermeable1/ (.ar domain)
+- https://www.columbiasportswear.pt/es_CL/c/footwear-winter (.pt domain and /es_CL/ path)
+- https://listado.mercadolibre.com.ar/camperas-de-invierno-impermeables-mujer (.ar domain)
+- https://www.menshealth.com/es/moda-cuidados-hombre/a62734210/decathlon-botas-invierno-impermeables-comodas-hombre/ (/es/ path)
+
 Respond with a JSON object containing ONLY the following fields:
-- "page_type": (string) One of "PRODUCT", "CATEGORY", "BLOG", "OTHER".
+- "page_type": (string) One of "PRODUCT", "CATEGORY", "BLOG", "OTHER", or "EXCLUDE_NON_URUGUAY" (if the URL is not for Uruguay).
 - "identified_product_name": (string, OPTIONAL) If page_type is "PRODUCT", the product name identified on the page. Otherwise omit.
 - "category_name": (string, OPTIONAL) If page_type is "CATEGORY", the name of the category. Otherwise omit.
 - "reasoning": (string, OPTIONAL) A brief explanation for your classification.
@@ -82,19 +104,26 @@ Example for a CATEGORY page:
   "reasoning": "Lists multiple winter jackets."
 }}
 
-Example for OTHER:
+Example for EXCLUDE_NON_URUGUAY:
 {{
-  "page_type": "OTHER",
-  "reasoning": "This is a forum discussion."
+  "page_type": "EXCLUDE_NON_URUGUAY",
+  "reasoning": "The domain ends with .es, which is not Uruguay, or there is no Uruguay indicator in the URL."
 }}
 
-IMPORTANT: Do NOT include any comments, explanations, or text outside or inside the JSON object. Do NOT use // or /* */ or any other comment syntax. Only output valid JSON.
+IMPORTANT: Only classify a page as "PRODUCT" if it is an individual product page, not a category, collection, or listing page.
+- If the page lists multiple products, or is a category/collection/search result, classify as "CATEGORY" or "EXCLUDE_NON_PRODUCT".
+- Only classify as "PRODUCT" if the page is dedicated to a single product, with specific details, price, and purchase options for that product.
+- Example PRODUCT: A page for "Columbia Impermeable Invierno Modelo XYZ" with price and buy button.
+- Example CATEGORY: A page listing many "impermeables invierno" with filters or multiple products.
+- This is important so the price extractor agent can reliably extract a price for a single product.
 
 Focus on the provided snippet, title, and URL.
 URL: {url_info.url}
 Title: {url_info.title}
 Snippet: {url_info.snippet}
 User's product query: "{product_name}"
+
+Remember: Do NOT include any comments, explanations, or text outside or inside the JSON object. Do NOT use // or /* */ or any other comment syntax. Only output valid JSON.
 """
         user_prompt = f"Analyze the following web page information based on the user's query for '{product_name}':\nURL: {url_info.url}\nTitle: {url_info.title}\nSnippet: {url_info.snippet}\nReturn ONLY the JSON object as specified in the system instructions."
 
@@ -200,8 +229,8 @@ User's product query: "{product_name}"
         self, 
         extracted_urls: List[ExtractedUrlInfo], 
         product_name: str,
-        batch_size: int = 5,
-        delay_between_batches: float = 1.0 # seconds
+        batch_size: int = 2,
+        delay_between_batches: float = 0.01 # seconds
     ) -> List[IdentifiedPageCandidate]:
         identified_candidates: List[IdentifiedPageCandidate] = []
         if not extracted_urls:

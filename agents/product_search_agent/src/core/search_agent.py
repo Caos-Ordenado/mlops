@@ -28,6 +28,8 @@ class SearchAgent:
             "Accept": "application/json",
             "X-Subscription-Token": api_key
         }
+
+        query = f"{query}&country=UY"
         params = {"q": query, "count": 20}
         try:
             async with self.session.get(url, headers=headers, params=params, timeout=15) as resp:

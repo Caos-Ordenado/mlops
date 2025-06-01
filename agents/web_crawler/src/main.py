@@ -13,6 +13,8 @@ logger = setup_logger("web_crawler")
 # Now import other modules
 from dotenv import load_dotenv
 
+from .api import app
+
 # Load environment variables
 load_dotenv(override=True)
 
@@ -67,8 +69,6 @@ async def run_example():
 def run_server():
     """Run the FastAPI server."""
     import uvicorn
-    from api import app
-    
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 if __name__ == "__main__":

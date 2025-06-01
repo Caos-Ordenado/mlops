@@ -53,7 +53,7 @@ async def create_databases(config: DatabaseConfig):
     conn.close()
 
 async def init_database():
-    """Initialize the database and create tables."""
+    """Initialize the database (ensure databases exist)."""
     # Create database config
     config = DatabaseConfig(
         postgres_host=os.getenv("POSTGRES_HOST", "postgres.shared.svc.cluster.local"),
@@ -68,21 +68,23 @@ async def init_database():
         echo_sql=True
     )
     
-    # First, create the databases
+    # First, create the databases if they don't exist
     await create_databases(config)
     
-    print("Initializing web_crawler database...")
-    async with DatabaseContext(config=config) as db:
-        # Install pgvector extension
-        print("Installing pgvector extension...")
-        async with db.db.engine.begin() as conn:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        print("pgvector extension installed successfully!")
+    print("Database existence check complete. Further schema setup should be handled by Alembic migrations.")
+    # Commenting out or removing parts now handled by Alembic:
+    # print("Initializing web_crawler database...")
+    # async with DatabaseContext(config=config) as db:
+    #     # Install pgvector extension
+    #     print("Installing pgvector extension...") # This is now in Alembic initial migration
+    #     async with db.db.engine.begin() as conn:
+    #         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+    #     print("pgvector extension installed successfully!")
         
-        # Create tables for web_crawler
-        print("Creating web_crawler database tables...")
-        await db.db.create_tables()
-        print("Web_crawler database tables created successfully!")
+    #     # Create tables for web_crawler
+    #     print("Creating web_crawler database tables...") # This should be done by Alembic
+    #     await db.db.create_tables()
+    #     print("Web_crawler database tables created successfully!")
 
 if __name__ == "__main__":
     asyncio.run(init_database()) 
