@@ -1,41 +1,50 @@
 FROM python:3.10-slim
 
+# Create a non-root user
+RUN groupadd --gid 1000 appuser && \
+    useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
+
 WORKDIR /app
+
+# Upgrade pip and set optimizations
+RUN pip install --upgrade pip
 
 # Set pip cache directory and other optimizations
 ENV PIP_NO_CACHE_DIR=false \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_DEFAULT_TIMEOUT=100
+    PIP_DEFAULT_TIMEOUT=100 \
+    PYTHONPATH="/app:/app/shared"
 
-# Copy requirements files first to leverage Docker cache
-COPY web_crawler/requirements.txt web_crawler-requirements.txt
-COPY shared/requirements.txt shared-requirements.txt
-
-# Install dependencies with pip cache
-RUN pip install --cache-dir=/root/.pip-cache -r web_crawler-requirements.txt && \
-    pip install --cache-dir=/root/.pip-cache -r shared-requirements.txt && \
-    rm -rf /root/.cache/pip/*
-
-# Copy and install shared module
+# Copy and install shared module first (this provides base dependencies)
 COPY shared/ /app/shared/
-RUN cd /app/shared && pip install --cache-dir=/root/.pip-cache -e . && \
-    rm -rf /root/.cache/pip/*
+RUN cd /app/shared && \
+    pip install -e . && \
+    pip list | grep -E "(shared|sqlalchemy|redis|aiohttp|loguru)" | head -10
 
-# Now copy the rest of the application
-COPY web_crawler/src/ src/
-COPY web_crawler/setup.py .
-COPY web_crawler/README.md .
+# Copy web crawler files  
+COPY web_crawler/src/ /app/src/
+COPY web_crawler/pyproject.toml /app/pyproject.toml
+COPY web_crawler/README.md /app/README.md
 
-# Install the package
-RUN pip install --cache-dir=/root/.pip-cache -e . && \
-    rm -rf /root/.cache/pip/*
+# Install web crawler dependencies (only web crawler specific deps due to optimized pyproject.toml)
+RUN pip install -e . && \
+    pip list | grep -E "(fastapi|uvicorn|lxml|psutil)" | head -10
 
-# Set the working directory to src
-WORKDIR /app/src
+# Change ownership of app directory to appuser
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Ensure user binaries are in PATH
+ENV PATH="/home/appuser/.local/bin:$PATH"
+
+# Set the working directory to /app (not /app/src)
+WORKDIR /app
 
 # Expose the FastAPI port
 EXPOSE 8000
 
-# Command to run the FastAPI server
-CMD ["python", "main.py"] 
+# Run the application using uvicorn as a module
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"] 

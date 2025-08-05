@@ -14,7 +14,7 @@ from asyncio import TimeoutError
 from urllib.robotparser import RobotFileParser
 import psutil
 from bs4 import BeautifulSoup
-from .agent import BaseAgent
+
 import time
 import json
 from shared import setup_logger
@@ -202,15 +202,16 @@ class CrawlerSettings(BaseModel):
             
         return filtered_urls[:self.max_pages]
 
-class WebCrawlerAgent(BaseAgent):
-    """Agent for crawling web pages."""
+class WebCrawlerAgent:
+    """Agent for crawling web pages with database integration and robust features."""
     
     def __init__(self, settings: CrawlerSettings, db_context: Optional[DatabaseContext] = None):
         """Initialize the web crawler agent."""
-        super().__init__(settings)
+        self.settings = settings
         self.session = None
         self.start_time = None
         self.db_context = db_context
+        logger.info(f"Initialized robust web crawler agent with settings: {settings.model_dump()}")
     
     async def __aenter__(self):
         """Enter async context."""
@@ -287,6 +288,7 @@ class WebCrawlerAgent(BaseAgent):
                         urljoin(url, link['href'])
                         for link in soup.find_all('a', href=True)
                     ],
+                    html=html,  # Add raw HTML content for storage compatibility
                     metadata={
                         'status_code': response.status,
                         'content_type': response.headers.get('content-type'),
@@ -300,8 +302,18 @@ class WebCrawlerAgent(BaseAgent):
                     }
                 )
                 
-                # Save webpage using shared components
-                await self.db_context.webpages.save(webpage)
+                # Save webpage using shared components with timeout protection
+                try:
+                    await asyncio.wait_for(
+                        self.db_context.webpages.save(webpage),
+                        timeout=30.0  # 30 second timeout for database operations
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(f"Database save timed out for {url}")
+                    # Continue without saving to database, but still return the result
+                except Exception as e:
+                    logger.error(f"Database save failed for {url}: {str(e)}")
+                    # Continue without saving to database, but still return the result
                 
                 # Check memory usage after crawling
                 if self.settings.debug:
@@ -344,6 +356,11 @@ class WebCrawlerAgent(BaseAgent):
             logger.debug(f"Starting crawl of {len(urls)} URLs at depth {current_depth}")
             self.start_time = time.time() if current_depth == 0 else self.start_time
             
+            # Check if we've exceeded the maximum total time
+            if self.start_time and (time.time() - self.start_time) > self.settings.max_total_time:
+                logger.warning(f"Maximum total time {self.settings.max_total_time}s exceeded, stopping crawl")
+                return []
+            
             # Filter URLs based on settings and remaining capacity
             remaining_slots = self.settings.max_pages - successful_crawls
             filtered_urls = []
@@ -362,6 +379,10 @@ class WebCrawlerAgent(BaseAgent):
             
             async def crawl_with_semaphore(url: str) -> Optional[Dict[str, Any]]:
                 async with semaphore:
+                    # Check time limit before each URL
+                    if self.start_time and (time.time() - self.start_time) > self.settings.max_total_time:
+                        logger.warning(f"Time limit exceeded, skipping {url}")
+                        return None
                     result = await self.crawl_url(url)
                     if result:
                         self.settings.processed_urls.add(url)
@@ -370,13 +391,36 @@ class WebCrawlerAgent(BaseAgent):
             for url in filtered_urls:
                 tasks.append(asyncio.create_task(crawl_with_semaphore(url)))
 
-            # Wait for all tasks to complete
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Wait for all tasks to complete with a timeout
+            try:
+                # Calculate remaining time for this batch
+                remaining_time = self.settings.max_total_time
+                if self.start_time:
+                    elapsed = time.time() - self.start_time
+                    remaining_time = max(5, self.settings.max_total_time - elapsed)  # At least 5 seconds
+                
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True), 
+                    timeout=remaining_time
+                )
+            except asyncio.TimeoutError:
+                logger.warning(f"Batch crawling timed out after {remaining_time}s")
+                # Cancel remaining tasks
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                # Wait a bit for cancellation to complete
+                await asyncio.sleep(0.1)
+                results = [task.result() if task.done() and not task.cancelled() else None for task in tasks]
+            
             valid_results = [r for r in results if isinstance(r, dict)]
             
-            # Check if we should continue crawling
+            # Check if we should continue crawling (with time limit check)
             successful_crawls += len(valid_results)
-            if current_depth < self.settings.max_depth and successful_crawls < self.settings.max_pages:
+            if (current_depth < self.settings.max_depth and 
+                successful_crawls < self.settings.max_pages and
+                (not self.start_time or (time.time() - self.start_time) < self.settings.max_total_time)):
+                
                 # Extract all links from results
                 next_urls = []
                 for result in valid_results:
@@ -384,9 +428,20 @@ class WebCrawlerAgent(BaseAgent):
                 
                 if next_urls:
                     logger.debug(f"Found {len(next_urls)} new URLs at depth {current_depth}")
-                    # Recursively crawl next level
-                    next_results = await self.crawl_urls(next_urls, current_depth + 1)
-                    valid_results.extend(next_results)
+                    # Recursively crawl next level with timeout protection
+                    try:
+                        remaining_time = self.settings.max_total_time
+                        if self.start_time:
+                            elapsed = time.time() - self.start_time
+                            remaining_time = max(5, self.settings.max_total_time - elapsed)
+                        
+                        next_results = await asyncio.wait_for(
+                            self.crawl_urls(next_urls, current_depth + 1),
+                            timeout=remaining_time
+                        )
+                        valid_results.extend(next_results)
+                    except asyncio.TimeoutError:
+                        logger.warning(f"Recursive crawling timed out at depth {current_depth + 1}")
             
             logger.info(f"Completed crawl of {len(valid_results)} URLs at depth {current_depth} (total successfully crawled: {successful_crawls})")
             return valid_results

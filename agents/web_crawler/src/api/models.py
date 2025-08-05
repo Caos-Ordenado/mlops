@@ -3,7 +3,8 @@ Pydantic models for the web crawler API.
 """
 
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
+from urllib.parse import urlparse
 
 
 class CrawlRequest(BaseModel):
@@ -59,6 +60,63 @@ class CrawlRequest(BaseModel):
         example=5
     )
 
+
+class SingleCrawlRequest(BaseModel):
+    """Request model for single URL crawl endpoint."""
+    url: str = Field(
+        ...,
+        description="URL to crawl",
+        example="https://example.com"
+    )
+    respect_robots: Optional[bool] = Field(
+        default=False,
+        description="Whether to respect robots.txt rules",
+        example=True
+    )
+    timeout: Optional[int] = Field(
+        default=180000,
+        gt=0,
+        description="Timeout in milliseconds for the request",
+        example=180000
+    )
+    extract_links: Optional[bool] = Field(
+        default=True,
+        description="Whether to extract links from the page",
+        example=True
+    )
+    bypass_cache: Optional[bool] = Field(
+        default=False,
+        description="Whether to bypass cache and force fresh crawl",
+        example=False
+    )
+
+    @validator('url')
+    def validate_url(cls, v):
+        """Validate URL format."""
+        try:
+            result = urlparse(v)
+            if not all([result.scheme, result.netloc]):
+                raise ValueError('Invalid URL format: URL must include scheme and netloc')
+            if result.scheme not in ['http', 'https']:
+                raise ValueError('Invalid URL scheme: Only http and https are supported')
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise e
+            raise ValueError(f'Invalid URL format: {str(e)}')
+        return v
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "url": "https://example.com",
+                "respect_robots": False,
+                "timeout": 30000,
+                "extract_links": True,
+                "bypass_cache": False
+            }
+        }
+
+
 class CrawlResult(BaseModel):
     """Model for individual crawl results."""
     url: str
@@ -67,6 +125,7 @@ class CrawlResult(BaseModel):
     links: List[str]
     metadata: dict
 
+
 class CrawlResponse(BaseModel):
     """Response model for crawl endpoint."""
     success: bool
@@ -74,6 +133,61 @@ class CrawlResponse(BaseModel):
     total_urls: int
     crawled_urls: int
     elapsed_time: float
+
+
+class SingleCrawlResponse(BaseModel):
+    """Response model for single URL crawl endpoint."""
+    success: bool = Field(
+        ...,
+        description="Whether the crawl was successful",
+        example=True
+    )
+    result: Optional[CrawlResult] = Field(
+        default=None,
+        description="Crawl result for the single URL"
+    )
+    elapsed_time: float = Field(
+        ...,
+        description="Time taken to complete the request in seconds",
+        example=1.5
+    )
+    error: Optional[str] = Field(
+        default=None,
+        description="Error message if the crawl failed",
+        example="Timeout while crawling URL"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "result": {
+                    "url": "https://example.com",
+                    "title": "Example Domain",
+                    "text": "This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.",
+                    "links": ["https://www.iana.org/domains/example"],
+                    "metadata": {
+                        "status_code": 200,
+                        "content_type": "text/html; charset=UTF-8",
+                        "meta_tags": [
+                            {"name": "viewport", "content": "width=device-width, initial-scale=1"},
+                            {"name": "description", "content": "Example Domain"}
+                        ],
+                        "headers_hierarchy": {
+                            "h1": ["Example Domain"], 
+                            "h2": [], 
+                            "h3": []
+                        },
+                        "images": [],
+                        "structured_data": [],
+                        "main_content": "This domain is for use in illustrative examples in documents."
+                    }
+                },
+                "elapsed_time": 1.5,
+                "error": None
+            }
+        }
+
 
 class Config:
     json_schema_extra = {
