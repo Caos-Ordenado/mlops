@@ -22,6 +22,8 @@ class UrlExtractorAgent:
             return []
 
         extracted_candidates: List[ExtractedUrlInfo] = []
+        seen_urls = set()  # Track seen URLs to avoid duplicates
+        
         for brave_result_item in all_brave_results:
             if not brave_result_item.results: # This is the raw dict from Brave API for a single query
                 continue
@@ -44,18 +46,23 @@ class UrlExtractorAgent:
                 try:
                     brave_hit = BraveApiHit(**hit_data)
                     if brave_hit.url:
-                        extracted_candidates.append(
-                            ExtractedUrlInfo(
-                                url=brave_hit.url,
-                                title=brave_hit.title,
-                                snippet=brave_hit.description, # Brave uses 'description' for snippet
-                                source_query=brave_result_item.query
+                        # Check if URL is already seen to avoid duplicates
+                        if brave_hit.url not in seen_urls:
+                            seen_urls.add(brave_hit.url)
+                            extracted_candidates.append(
+                                ExtractedUrlInfo(
+                                    url=brave_hit.url,
+                                    title=brave_hit.title,
+                                    snippet=brave_hit.description, # Brave uses 'description' for snippet
+                                    source_query=brave_result_item.query
+                                )
                             )
-                        )
+                        else:
+                            logger.debug(f"Skipping duplicate URL: {brave_hit.url} from query '{brave_result_item.query}'")
                     else:
                         logger.debug(f"Skipping Brave hit with no URL: {brave_hit.title or 'No Title'} for query '{brave_result_item.query}'")
                 except Exception as e: # Catch Pydantic validation errors or other issues
                     logger.warning(f"Could not parse Brave hit data: {hit_data} for query '{brave_result_item.query}'. Error: {e}")
         
-        logger.info(f"Extracted {len(extracted_candidates)} candidate URLs from Brave results.")
+        logger.info(f"Extracted {len(extracted_candidates)} unique candidate URLs from Brave results (removed duplicates).")
         return extracted_candidates 

@@ -1,6 +1,5 @@
 ---
-description: 
-globs: 
+globs: k8s/*
 alwaysApply: false
 ---
 # Security Rules

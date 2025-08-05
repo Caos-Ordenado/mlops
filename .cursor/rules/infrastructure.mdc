@@ -1,7 +1,6 @@
 ---
-description: 
-globs: 
-alwaysApply: true
+globs: k8s/*
+alwaysApply: false
 ---
 # Home Server Infrastructure Overview
 

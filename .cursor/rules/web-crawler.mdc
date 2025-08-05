@@ -1,25 +1,81 @@
 ---
-description: 
-globs: 
-alwaysApply: true
+description: Web Crawler
+alwaysApply: false
 ---
-# Web Crawler Configuration
+# Web Crawler
+
+## Core Functionality
+- **Asynchronous crawling**: Memory-adaptive with configurable concurrency
+- **Data extraction**: Full text, headers, links, meta tags, structured data
+- **Storage**: PostgreSQL + Redis using repository pattern
+- **Search**: Full-text search and domain filtering
 
 ## Deployment
-- Namespace: default
-- Service name: web-crawler
-- Path prefix: /crawler
-- Access points:
-  - API: http://home.server:30081/crawler/
-  - Swagger UI: http://home.server:30081/crawler/docs
-  - ReDoc UI: http://home.server:30081/crawler/redoc
+- **Namespace**: default
+- **Service**: web-crawler
+- **Update script**: `cd agents/web_crawler && ./deploy.sh`
+- **Access**: http://home.server:30081/crawler/
+
+## API Endpoints
+### POST /crawler/crawl
+```json
+{
+  "urls": ["https://example.com"],
+  "max_pages": 100,
+  "max_depth": 3,
+  "allowed_domains": ["example.com"],
+  "exclude_patterns": ["/admin", "*.pdf"],
+  "respect_robots": false,
+  "timeout": 180000,
+  "max_concurrent_pages": 5
+}
+```
+
+### GET /crawler/health
+Health check endpoint
+
+## Data Extraction
+
+### Using Repository Pattern
+```python
+from shared.database.context import DatabaseContext
+
+config = DatabaseConfig(
+    postgres_host="postgres.shared.svc.cluster.local",
+    postgres_port=5432,
+    postgres_db="web_crawler",
+    postgres_user="admin"
+)
+
+async with DatabaseContext(config=config) as db_context:
+    async with db_context.db.get_session() as session:
+        # Get recent pages
+        pages = await db_context.webpages.get_recent_pages(session, limit=10)
+        
+        # Search by domain
+        pages = await db_context.webpages.get_pages_by_domain(session, "example.com")
+        
+        # Full-text search
+        pages = await db_context.webpages.search_pages(session, "query")
+```
+
+### Using PostgreSQL MCP Tool
+Direct database access for queries and analysis:
+- **Database**: web_crawler
+- **Table**: webpage
+- **Connection**: Use postgres MCP tool with cluster credentials
+
+## Available Data
+- `url`, `title`, `description`, `main_content`, `full_text`
+- `links`, `headers`, `meta_tags`, `images`, `structured_data`
+- `crawled_at`, `content_language`
 
 ## Configuration
-- Memory threshold: 80% (configurable)
-- Debug logging: CRAWLER_DEBUG environment variable
-- Storage options:
-  - Redis for caching
-  - PostgreSQL for persistence
+- **Memory threshold**: 80% (CRAWLER_MEMORY_THRESHOLD)
+- **Max pages**: 10000 (CRAWLER_MAX_PAGES)
+- **Max depth**: 20 (CRAWLER_MAX_DEPTH)
+- **Debug**: CRAWLER_DEBUG environment variable
+- **ConfigMap**: web-crawler-config in shared namespace
 
 ## Monitoring
 ```bash
@@ -30,12 +86,8 @@ kubectl get pods -n default -l app=web-crawler
 kubectl logs -n default -l app=web-crawler --tail=100
 
 # Configuration
-kubectl get configmap -n default web-crawler-config -o yaml
-```
+kubectl get configmap -n shared web-crawler-config -o yaml
 
-## Best Practices
-1. Use deployment script for updates
-2. Monitor memory usage through debug logs
-3. Configure appropriate cleanup intervals
-4. Set proper log levels per environment
-5. Monitor storage backend health 
+# Restart deployment
+kubectl rollout restart deployment/web-crawler -n default
+``` 

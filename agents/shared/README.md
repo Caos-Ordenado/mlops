@@ -139,16 +139,15 @@ async with OllamaClient() as llm:
     # Simple generation
     response = await llm.generate(
         "Summarize this text: ...",
-        model="llama2"
+        model="llama3.2"
     )
     
     # Advanced options
     response = await llm.generate(
         prompt="Your prompt here",
-        model="llama2",
+        model="llama3.2",
         temperature=0.7,
-        max_tokens=500,
-        stop_sequences=["END"]
+        num_predict=500,
     )
 ```
 

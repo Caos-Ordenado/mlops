@@ -21,9 +21,13 @@ app.add_middleware(
 )
 
 @app.get("/search", response_model=ProductSearchResponse)
-async def search(product: str = Query(..., description="Product to search for")):
+async def search(
+    product: str = Query(..., description="Product to search for"),
+    country: str = Query("UY", description="Country code for geographic URL validation (e.g., UY, AR, BR, CL, CO, PE, EC, MX, US, ES)"),
+    city: str = Query(None, description="Optional city name for more specific geographic validation")
+):
     try:
-        async with ProductSearchAgent() as agent:
+        async with ProductSearchAgent(country=country, city=city) as agent:
             (
                 api_results, # List[str] of validated queries
                 validation_attempts,

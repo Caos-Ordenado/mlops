@@ -14,13 +14,15 @@ logger = setup_logger(__name__)
 class OllamaClient:
     """Client for interacting with Ollama LLM service."""
     
-    def __init__(self, base_url: str = "http://home.server:30080/ollama"):
+    def __init__(self, base_url: str = "http://home.server:30080/ollama", model: str = "llama3.2"):
         """Initialize the Ollama client.
         
         Args:
             base_url: Base URL of the Ollama API
+            model: Default model to use
         """
         self.base_url = base_url.rstrip('/')
+        self.model = model
         self.session = None
         
     async def __aenter__(self):
@@ -39,7 +41,7 @@ class OllamaClient:
             model: Optional[str] = None,
             system: Optional[str] = None,
             temperature: float = 0.2,
-            max_tokens: int = 4096
+            num_predict: int = 4096
         ) -> str:
         """Generate text using the Ollama API.
         
@@ -47,8 +49,8 @@ class OllamaClient:
             prompt: The prompt to generate text from
             model: The model to use. Defaults to the one specified in constructor.
             system: Optional system prompt
-            temperature: Sampling temperature (default: 0.7)
-            max_tokens: Maximum tokens to generate (default: 4096)
+            temperature: Sampling temperature (default: 0.2)
+            num_predict: Maximum tokens to generate (default: 4096)
             
         Returns:
             str: The generated text
@@ -61,8 +63,10 @@ class OllamaClient:
             "model": model or self.model,
             "prompt": prompt,
             "stream": False,
-            "temperature": temperature,
-            "max_tokens": max_tokens
+            "options": {
+                "temperature": temperature,
+                "num_predict": num_predict
+            }
         }
         
         if system:

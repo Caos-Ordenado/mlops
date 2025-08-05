@@ -1,9 +1,9 @@
 ---
-description: 
-globs: 
+description: Models available on the Ollama server
 alwaysApply: false
 ---
 # Available LLM Models
 
-- Llama 3.2
-- Deepseek-r1
+- phi3:latest
+- deepseek-r1:1.5b
+- llama3.2:1b
