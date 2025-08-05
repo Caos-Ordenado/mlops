@@ -41,14 +41,6 @@ async def create_databases(config: DatabaseConfig):
     else:
         print("Database 'web_crawler' already exists")
 
-    # Create langflow database
-    cur.execute("SELECT 1 FROM pg_database WHERE datname = 'langflow'")
-    if not cur.fetchone():
-        cur.execute("CREATE DATABASE langflow")
-        print("Created 'langflow' database")
-    else:
-        print("Database 'langflow' already exists")
-
     cur.close()
     conn.close()
 

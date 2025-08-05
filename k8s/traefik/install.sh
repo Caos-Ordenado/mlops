@@ -28,6 +28,6 @@ kubectl apply -f "${SCRIPT_DIR}/custom-nodeports-service.yaml"
 echo "Traefik installation completed!"
 echo "Dashboard available at: http://home.server:31080/dashboard"
 echo "Web services available at: http://home.server:30080/"
-echo "Langflow available at: http://home.server:30081/"
+
 echo "PostgreSQL available at: home.server:32080"
 echo "Redis available at: home.server:32081"

@@ -12,11 +12,7 @@ spec:
     app.kubernetes.io/name: traefik
     app.kubernetes.io/instance: traefik-kube-system
   ports:
-    - name: langflow
-      protocol: TCP
-      port: 7860       # Service port (can be same as targetPort)
-      targetPort: 7860  # Port on the Traefik container (must match entryPoint address)
-      nodePort: 30081   # External NodePort
+
     - name: postgres
       protocol: TCP
       port: 5432

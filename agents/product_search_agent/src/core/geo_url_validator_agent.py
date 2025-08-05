@@ -520,22 +520,22 @@ Respond with ONLY a JSON array of enhanced queries, like: ["enhanced query 1", "
         urls_text = "\n".join([f"- {url}" for url in urls])
         
         # Use system prompt for instructions and user prompt for the task
-        system_prompt = f"""You are a URL classifier specialized in identifying e-commerce websites for {location_context}.
+        system_prompt = f"""You are a URL classifier that identifies e-commerce websites serving {location_context}.
 
-Your task is to analyze URLs and determine which ones serve {location_context} market.
+TASK: Return URLs that can be accessed and purchased from by people in {location_context}.
 
-CRITICAL: You must respond with ONLY a valid JSON array. No explanations, no reasoning, no additional text.
+RESPONSE FORMAT: Valid JSON array only. No explanations, no markdown, no additional text.
+Example: ["url1", "url2"] or []
 
-Format: ["url1", "url2", "url3"] or [] if none are relevant.
+INCLUDE ONLY URLs that meet ALL these criteria:
+1. Domain ends with .{self.country.lower()} (country-specific domain)
+2. OR domain contains "{self.country.lower()}" in the domain name itself
+3. OR domain is a known retailer that serves {location_context} market
+4. OR URL path contains "/{self.country.lower()}/" or "/{self.city.lower() if self.city else 'montevideo'}/"
 
-Criteria for {location_context}:
-1. Domain ends with country code for {self.country} (like .{self.country.lower()})
-2. Domain contains geographic indicators ({self.country.lower()}, {self.city.lower() if self.city else 'montevideo'})
-3. Known local retailers/brands for {location_context}
-4. URL path contains location indicators (/{self.country.lower()}/, /{self.city.lower() if self.city else 'montevideo'}/)
-5. Regional e-commerce patterns for {location_context}
+CRITICAL: Only include URLs where people in {location_context} can actually purchase products. Exclude URLs from other countries' domains unless they specifically serve {location_context}.
 
-IMPORTANT: Return ONLY the JSON array. No markdown formatting, no explanations."""
+Return ONLY the JSON array."""
 
         user_prompt = f"""Search Query: "{search_query}"
 
@@ -549,8 +549,8 @@ Return only the JSON array of URLs that serve {location_context}:"""
                 response = await llm.generate(
                     prompt=user_prompt,
                     system=system_prompt,
-                    temperature=0.1,  # Very low temperature for consistent classification
-                    num_predict=300   # Increased slightly to accommodate JSON response
+                    temperature=0.0,  # Zero temperature for maximum determinism
+                    num_predict=200   # Reduced for concise JSON-only responses
                 )
                 
                 # Parse LLM response

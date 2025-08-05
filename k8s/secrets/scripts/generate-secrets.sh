@@ -111,7 +111,7 @@ replace_placeholders "${TEMPLATE_DIR}/${template_file}" "$output_file"
 
 # Auto-apply logic
 case "$output_file" in
-  *langflow.yaml|*web-crawler.yaml)
+  *web-crawler.yaml)
     echo -e "${GREEN}Applying $output_file to namespace 'default'...${NC}"
     kubectl apply -f "$output_file" -n default
     ;;

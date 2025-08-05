@@ -40,7 +40,7 @@ ports:
     # tls: # Default chart often has TLS config here for websecure
     #   enabled: true
 
-  # langflow, postgres, redis are removed from this 'ports' section.
+  # postgres, redis are removed from this 'ports' section.
   # Their NodePort exposure will be managed by a custom Kubernetes Service.
   # Their internal Traefik entrypoints are correctly defined in additionalArguments.
 
@@ -49,7 +49,7 @@ additionalArguments:
   - "--api.insecure=true"
   - "--log.level=DEBUG"
   - "--entryPoints.web.address=:9080"
-  - "--entryPoints.langflow.address=:7860"
+
   - "--entryPoints.traefik.address=:8080"
   - "--entryPoints.postgres.address=:5432/tcp"
   - "--entryPoints.redis.address=:6379/tcp"

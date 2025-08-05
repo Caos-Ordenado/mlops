@@ -23,13 +23,11 @@ alwaysApply: false
 4. default:
    - Ollama LLM service
    - Web crawler service
-   - Langflow
 
 ## Directory Structure
 ```
 k8s/
 ├── argocd/         # ArgoCD deployment
-├── langflow/       # Langflow
 ├── ollama/         # Ollama service
 ├── secrets/        # Secret management
 ├── shared/         # Shared infrastructure
