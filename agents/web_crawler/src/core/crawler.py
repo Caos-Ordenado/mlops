@@ -13,6 +13,8 @@ import aiohttp
 from asyncio import TimeoutError
 from urllib.robotparser import RobotFileParser
 import psutil
+
+from .models import CrawlerSettings
 from bs4 import BeautifulSoup
 
 import time
@@ -44,164 +46,6 @@ def get_domain(url: str) -> str:
     parsed = urlparse(url)
     return parsed.netloc
 
-class CrawlerSettings(BaseModel):
-    """Settings for the web crawler."""
-    max_pages: int = Field(default=10000, gt=0)
-    max_depth: int = Field(default=20, gt=0)
-    allowed_domains: Optional[List[str]] = None
-    exclude_patterns: Optional[List[str]] = None
-    respect_robots: bool = False
-    timeout: int = Field(default=180000, gt=0)  # milliseconds
-    max_total_time: int = Field(default=300, gt=0)  # seconds
-    max_concurrent_pages: int = Field(default=10, gt=0)
-    memory_threshold: float = Field(default=80.0, gt=0.0, lt=100.0)
-    user_agent: str = "Mozilla/5.0 (compatible; WebCrawlerAgent/1.0)"
-    robot_parser: Optional[RobotFileParser] = None
-    processed_urls: Set[str] = set()
-    processed_sitemaps: Set[str] = set()
-    site_urls: List[str] = []
-    debug: bool = os.getenv("CRAWLER_LOG_LEVEL", "false").lower() == "true"
-
-    model_config = {
-        "arbitrary_types_allowed": True
-    }
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if self.respect_robots:
-            self.robot_parser = RobotFileParser()
-        # Parse site URLs from environment variable
-        self.site_urls = self._parse_site_urls()
-        # Log initial memory usage
-        log_memory_usage("Crawler Initialization", self.debug)
-
-    def _parse_site_urls(self) -> List[str]:
-        """Parse site URLs from environment variable."""
-        urls_str = os.getenv("CRAWLER_SITE_URL", "https://ai.pydantic.dev")
-        return [url.strip() for url in urls_str.split(",") if url.strip()]
-
-    def _normalize_url(self, url: str) -> str:
-        """Normalize URL to avoid duplicates with different formats."""
-        parsed = urlparse(url)
-        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}".rstrip('/')
-
-    def check_memory_threshold(self) -> bool:
-        """Check if memory usage exceeds threshold and log the status."""
-        memory_percent = log_memory_usage("Memory Threshold Check", self.debug)
-        is_exceeded = memory_percent > self.memory_threshold
-        if is_exceeded:
-            logger.warning(f"Memory threshold exceeded: {memory_percent:.2f}% > {self.memory_threshold}%")
-        return is_exceeded
-
-    async def _check_robots_txt(self, url: str) -> bool:
-        """Check if URL is allowed by robots.txt."""
-        if not self.respect_robots:
-            return True
-            
-        try:
-            parsed_url = urlparse(url)
-            robots_url = f"{parsed_url.scheme}://{parsed_url.netloc}/robots.txt"
-            
-            self.robot_parser.set_url(robots_url)
-            self.robot_parser.user_agent = self.user_agent
-            self.robot_parser.read()
-            
-            return self.robot_parser.can_fetch(self.user_agent, url)
-        except Exception as e:
-            logger.warning(f"Error checking robots.txt for {url}: {str(e)}")
-            return False
-
-    async def _get_sitemap_urls(self, base_url: str) -> List[str]:
-        """Extract URLs from sitemap.xml."""
-        urls = []
-        try:
-            if self.respect_robots:
-                robots_url = urljoin(base_url, "/robots.txt")
-                if await self._check_robots_txt(robots_url):
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(robots_url, timeout=self.timeout) as response:
-                            if response.status == 200:
-                                robots_text = await response.text()
-                                for line in robots_text.split('\n'):
-                                    if line.lower().startswith('sitemap:'):
-                                        sitemap_url = line.split(':', 1)[1].strip()
-                                        if sitemap_url not in self.processed_sitemaps:
-                                            self.processed_sitemaps.add(sitemap_url)
-                                            urls.extend(await self._parse_sitemap(sitemap_url))
-                                            break
-            
-            if not urls:
-                common_sitemaps = [
-                    urljoin(base_url, "/sitemap.xml"),
-                    urljoin(base_url, "/sitemap_index.xml"),
-                ]
-                
-                for sitemap_url in common_sitemaps:
-                    if sitemap_url not in self.processed_sitemaps:
-                        try:
-                            async with aiohttp.ClientSession() as session:
-                                async with session.get(sitemap_url, timeout=self.timeout) as response:
-                                    if response.status == 200:
-                                        urls.extend(await self._parse_sitemap(sitemap_url))
-                                        self.processed_sitemaps.add(sitemap_url)
-                                        break
-                        except Exception as e:
-                            logger.warning(f"Failed to fetch sitemap from {sitemap_url}: {str(e)}")
-                            continue
-                        
-        except Exception as e:
-            logger.error(f"Error fetching sitemap: {str(e)}")
-            
-        return urls
-
-    async def _parse_sitemap(self, sitemap_url: str) -> List[str]:
-        """Parse a sitemap XML file and extract URLs."""
-        urls = []
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(sitemap_url, timeout=self.timeout) as response:
-                    if response.status == 200:
-                        content = await response.text()
-                        root = ET.fromstring(content)
-                        
-                        if 'sitemapindex' in root.tag:
-                            for sitemap in root.findall('.//{*}loc'):
-                                sitemap_url = sitemap.text
-                                if sitemap_url not in self.processed_sitemaps:
-                                    self.processed_sitemaps.add(sitemap_url)
-                                    urls.extend(await self._parse_sitemap(sitemap_url))
-                        else:
-                            for url in root.findall('.//{*}url'):
-                                loc = url.find('{*}loc')
-                                if loc is not None and loc.text:
-                                    urls.append(loc.text)
-                                
-        except Exception as e:
-            logger.error(f"Error parsing sitemap {sitemap_url}: {str(e)}")
-            
-        return urls
-
-    async def _filter_urls(self, urls: List[str]) -> List[str]:
-        """Filter URLs based on allowed domains and exclude patterns."""
-        filtered_urls = []
-        for url in urls:
-            normalized_url = self._normalize_url(url)
-            if normalized_url in self.processed_urls:
-                continue
-                
-            if self.allowed_domains:
-                if not any(domain in url for domain in self.allowed_domains):
-                    continue
-                    
-            if self.exclude_patterns:
-                if any(pattern in url for pattern in self.exclude_patterns):
-                    continue
-                    
-            filtered_urls.append(url)
-            self.processed_urls.add(normalized_url)
-            
-        return filtered_urls[:self.max_pages]
-
 class WebCrawlerAgent:
     """Agent for crawling web pages with database integration and robust features."""
     
@@ -215,7 +59,8 @@ class WebCrawlerAgent:
     
     async def __aenter__(self):
         """Enter async context."""
-        self.session = aiohttp.ClientSession()
+        # Create session with comprehensive browser-like headers
+        self.session = aiohttp.ClientSession(headers=self.settings._get_browser_headers())
         if not self.db_context:
             self.db_context = DatabaseContext()
             await self.db_context.__aenter__()
@@ -329,6 +174,12 @@ class WebCrawlerAgent:
             
         except Exception as e:
             logger.error(f"Error crawling {url}: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            if hasattr(e, 'errno'):
+                logger.error(f"Error code: {e.errno}")
+            # For debugging network issues, log more details
+            import traceback
+            logger.debug(f"Full traceback: {traceback.format_exc()}")
             return None
     
     async def crawl_urls(self, urls: List[str], current_depth: int = 0) -> List[Dict[str, Any]]:

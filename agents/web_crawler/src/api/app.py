@@ -128,25 +128,46 @@ async def startup_event():
     
     logger.info("Initializing web crawler API...")
     
-    # Initialize database context
-    db_context = DatabaseContext(
-        config=DatabaseConfig(
-            postgres_host=os.getenv("POSTGRES_HOST", "localhost"),
-            postgres_port=int(os.getenv("POSTGRES_PORT", "5432")),
-            postgres_db=os.getenv("POSTGRES_DB", "web_crawler"),
-            postgres_user=os.getenv("POSTGRES_USER", "admin"),
-            postgres_password=os.getenv("POSTGRES_PASSWORD"),
-            redis_host=os.getenv("REDIS_HOST", "localhost"),
-            redis_port=int(os.getenv("REDIS_PORT", "6379")),
-            redis_db=int(os.getenv("REDIS_DB", "0")),
-            redis_password=os.getenv("REDIS_PASSWORD")
-        )
-    )
-    await db_context.__aenter__()
-    logger.debug("Database context initialized")
+    # Initialize database context with retry logic
+    max_retries = 5
+    retry_delay = 2
     
-    # Start cleanup task
-    asyncio.create_task(cleanup_task())
+    for attempt in range(max_retries):
+        try:
+            db_context = DatabaseContext(
+                config=DatabaseConfig(
+                    postgres_host=os.getenv("POSTGRES_HOST", "localhost"),
+                    postgres_port=int(os.getenv("POSTGRES_PORT", "5432")),
+                    postgres_db=os.getenv("POSTGRES_DB", "web_crawler"),
+                    postgres_user=os.getenv("POSTGRES_USER", "admin"),
+                    postgres_password=os.getenv("POSTGRES_PASSWORD"),
+                    redis_host=os.getenv("REDIS_HOST", "localhost"),
+                    redis_port=int(os.getenv("REDIS_PORT", "6379")),
+                    redis_db=int(os.getenv("REDIS_DB", "0")),
+                    redis_password=os.getenv("REDIS_PASSWORD")
+                )
+            )
+            await db_context.__aenter__()
+            logger.info("Database context initialized successfully")
+            break
+            
+        except Exception as e:
+            logger.warning(f"Database initialization attempt {attempt + 1}/{max_retries} failed: {str(e)}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logger.error("Failed to initialize database context after all retries")
+                # Don't raise exception - let the app start anyway and handle gracefully
+                db_context = None
+    
+    # Start cleanup task only if database is available
+    if db_context:
+        asyncio.create_task(cleanup_task())
+    else:
+        logger.warning("Cleanup task disabled due to database initialization failure")
+        
     logger.info("Web crawler API initialization complete")
 
 @app.on_event("shutdown")
@@ -176,8 +197,18 @@ async def crawl(request: CrawlRequest) -> CrawlResponse:
         )
         
         # Create crawler agent with existing database context
-        async with WebCrawlerAgent(settings, db_context=db_context) as agent:
-            results = await agent.crawl_urls(request.urls)
+        # If db_context is None, let the agent create its own (it will try to connect)
+        try:
+            async with WebCrawlerAgent(settings, db_context=db_context) as agent:
+                results = await agent.crawl_urls(request.urls)
+        except Exception as db_error:
+            logger.warning(f"Database-enabled crawler failed: {db_error}")
+            # Try without database context as fallback
+            logger.info("Attempting crawl without database storage")
+            async with WebCrawlerAgent(settings, db_context=None) as agent:
+                # Temporarily disable database saves in the agent
+                agent.db_context = None
+                results = await agent.crawl_urls(request.urls)
             
         return CrawlResponse(
             success=True,
@@ -272,18 +303,36 @@ async def crawl_single(request: SingleCrawlRequest) -> SingleCrawlResponse:
         )
         
         # Create crawler agent with optimized database context
-        async with WebCrawlerAgent(settings, db_context=db_context) as agent:
-            # Add timeout wrapper for the entire crawl operation
-            try:
-                result = await asyncio.wait_for(
-                    agent.crawl_url(request.url), 
-                    timeout=request.timeout / 1000.0  # Convert ms to seconds
-                )
-            except asyncio.TimeoutError:
-                raise HTTPException(
-                    status_code=408, 
-                    detail=f"Request timed out after {request.timeout/1000:.1f} seconds"
-                )
+        try:
+            async with WebCrawlerAgent(settings, db_context=db_context) as agent:
+                # Add timeout wrapper for the entire crawl operation
+                try:
+                    result = await asyncio.wait_for(
+                        agent.crawl_url(request.url), 
+                        timeout=request.timeout / 1000.0  # Convert ms to seconds
+                    )
+                except asyncio.TimeoutError:
+                    raise HTTPException(
+                        status_code=408, 
+                        detail=f"Request timed out after {request.timeout/1000:.1f} seconds"
+                    )
+        except Exception as db_error:
+            logger.warning(f"Database-enabled crawler failed: {db_error}")
+            # Try without database context as fallback
+            logger.info("Attempting single crawl without database storage")
+            async with WebCrawlerAgent(settings, db_context=None) as agent:
+                # Temporarily disable database saves in the agent
+                agent.db_context = None
+                try:
+                    result = await asyncio.wait_for(
+                        agent.crawl_url(request.url), 
+                        timeout=request.timeout / 1000.0  # Convert ms to seconds
+                    )
+                except asyncio.TimeoutError:
+                    raise HTTPException(
+                        status_code=408, 
+                        detail=f"Request timed out after {request.timeout/1000:.1f} seconds"
+                    )
             
             # Clear agent's internal cache to free memory
             if hasattr(agent, '_session_cache'):
@@ -340,8 +389,31 @@ async def crawl_single(request: SingleCrawlRequest) -> SingleCrawlResponse:
 
 @app.get("/health")
 async def health_check():
-    """Simple health check endpoint."""
-    return {"status": "ok"}
+    """Health check endpoint with database status."""
+    try:
+        status = {
+            "status": "ok",
+            "database": "unknown"
+        }
+        
+        if db_context:
+            # Test database connection briefly
+            try:
+                async with db_context.db.get_session() as session:
+                    from sqlalchemy import text
+                    await session.execute(text("SELECT 1"))
+                status["database"] = "connected"
+            except Exception:
+                status["database"] = "disconnected"
+                status["status"] = "degraded"
+        else:
+            status["database"] = "not_initialized"
+            status["status"] = "degraded"
+            
+        return status
+    except Exception:
+        # Always return 200 for basic health check to prevent restart loops
+        return {"status": "ok", "database": "error"}
 
 if __name__ == "__main__":
     import uvicorn
