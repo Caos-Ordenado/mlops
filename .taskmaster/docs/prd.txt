@@ -1,0 +1,155 @@
+# Product Requirements Document: Price Extraction and Comparison System
+
+## Overview
+Implement a comprehensive price extraction system for the MLOps Product Search Agent that extracts product prices from Uruguay e-commerce websites and sorts results by cheapest price first.
+
+## Background
+The current product search agent successfully:
+- Generates search queries for products
+- Extracts and validates URLs from search results (geo-filtered to Uruguay)
+- Classifies pages as PRODUCT, CATEGORY, or OTHER
+- Has a placeholder PriceExtractorAgent that needs implementation
+
+The missing piece is actual price extraction and comparison functionality.
+
+## Objectives
+1. **Primary Goal**: Extract product prices from classified PRODUCT pages
+2. **Secondary Goal**: Sort products by price (cheapest first)
+3. **Tertiary Goal**: Handle Uruguay-specific pricing formats and currency
+
+## Functional Requirements
+
+### F1: Web Crawler Integration
+- Enhance shared WebCrawlerClient with crawl_single method
+- Support for single URL crawling with caching
+- Error handling for failed crawls
+
+### F2: Price Extraction Engine
+- Replace placeholder PriceExtractorAgent with LLM-based implementation
+- Extract prices from full page content using crawl-single endpoint
+- Support multiple Uruguay price formats: $1,250, UYU 1.250, US$ 45
+- Handle currency detection (UYU vs USD)
+- Extract original price text for verification
+
+### F3: Price Processing
+- Parse extracted price strings into numeric values
+- Normalize currencies (convert to UYU if needed)
+- Handle price ranges, discounts, and promotions
+- Validate extracted prices for reasonableness
+
+### F4: Results Sorting and Response
+- Sort products by price (ascending - cheapest first)
+- Include price information in API response
+- Maintain original product information (URL, title, etc.)
+- Handle products where price extraction fails
+
+### F5: Error Handling and Resilience
+- Graceful handling of pages without prices
+- Retry logic for failed crawl attempts
+- Logging for debugging price extraction issues
+- Fallback behavior when price extraction fails
+
+## Technical Requirements
+
+### T1: LLM Integration
+- Use existing Ollama client with phi3 model
+- Structured JSON output for price extraction
+- Temperature 0.0 for consistent results
+- Optimized prompts for Uruguay e-commerce context
+
+### T2: Performance
+- Leverage crawl-single endpoint caching (5min TTL)
+- Process only PRODUCT type pages (filter out categories)
+- Concurrent processing where possible
+- Reasonable timeout handling
+
+### T3: Data Models
+- New ProductWithPrice model for results
+- Price metadata (currency, original text, confidence)
+- Integration with existing IdentifiedPageCandidate model
+
+### T4: Integration
+- Seamless integration with existing agent pipeline
+- No breaking changes to current API
+- Backward compatibility with existing response format
+
+## User Stories
+
+### US1: Basic Price Extraction
+As a user searching for "cepillo de dientes Colgate"
+I want to see product prices extracted from Uruguay websites
+So that I can compare prices across different stores
+
+### US2: Price Comparison
+As a user comparing products
+I want results sorted by price (cheapest first)
+So that I can quickly find the best deals
+
+### US3: Currency Handling
+As a user in Uruguay
+I want prices displayed in UYU currency
+So that I understand the local pricing
+
+### US4: Error Resilience
+As a user
+I want the system to work even if some prices can't be extracted
+So that I still get useful results from available data
+
+## Success Criteria
+1. Successfully extract prices from at least 80% of PRODUCT pages
+2. Correctly identify and handle UYU and USD currencies
+3. Sort results by price with 100% accuracy
+4. Maintain response time under 10 seconds for typical queries
+5. Handle edge cases gracefully (no prices, malformed prices, etc.)
+
+## Out of Scope
+- Price history tracking
+- Advanced price analytics
+- Multi-currency conversion rates
+- Price monitoring/alerts
+- Inventory tracking
+
+## Implementation Phases
+
+### Phase 1: Core Infrastructure (High Priority)
+- Add crawl_single method to WebCrawlerClient
+- Basic PriceExtractorAgent implementation
+- LLM prompt for price extraction
+
+### Phase 2: Price Processing (High Priority) 
+- Price parsing and normalization
+- Currency handling
+- Results sorting
+
+### Phase 3: Integration (Medium Priority)
+- Pipeline integration
+- API response enhancement
+- Error handling improvements
+
+### Phase 4: Polish (Low Priority)
+- Performance optimizations
+- Enhanced error messages
+- Logging improvements
+
+## Technical Dependencies
+- Existing shared WebCrawlerClient
+- Ollama client and phi3 model
+- Current product search pipeline
+- Web crawler service with crawl-single endpoint
+
+## Risks and Mitigation
+1. **Risk**: E-commerce sites may have complex price structures
+   **Mitigation**: Robust LLM prompts with examples, fallback parsing logic
+
+2. **Risk**: Performance impact of individual URL crawling
+   **Mitigation**: Leverage caching, concurrent processing where possible
+
+3. **Risk**: Price extraction accuracy varies by site
+   **Mitigation**: Extensive testing, iterative prompt improvement
+
+## Acceptance Criteria
+- Price extraction works for major Uruguay e-commerce sites (farmashop.com.uy, mercadolibre.com.uy, etc.)
+- Results are sorted correctly by price
+- System handles missing prices gracefully
+- Response time meets performance requirements
+- All existing functionality continues to work unchanged

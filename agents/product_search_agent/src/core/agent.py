@@ -1,5 +1,5 @@
 from shared.logging import setup_logger
-from src.api.models import BraveSearchResult, ExtractedUrlInfo, IdentifiedPageCandidate
+from src.api.models import BraveSearchResult, ExtractedUrlInfo, IdentifiedPageCandidate, ProductWithPrice
 from .query_generator import QueryGeneratorAgent
 from .search_agent import SearchAgent
 from .query_validator import QueryValidatorAgent
@@ -219,9 +219,22 @@ class ProductSearchAgent:
         else:
             logger.error(f"identified_page_candidates_list is NOT a list! Content: {identified_page_candidates_list}")
 
+        # Phase 3: Price Extraction from PRODUCT pages
+        extracted_prices = []
+        if identified_page_candidates_list:
+            try:
+                logger.info("Starting price extraction from identified product pages")
+                extracted_prices = await self.price_extractor.extract_prices(identified_page_candidates_list)
+                logger.info(f"Price extraction complete: {len(extracted_prices)} products processed")
+            except Exception as e:
+                logger.error(f"Price extraction failed: {e}", exc_info=True)
+                # Continue without prices rather than failing completely
+                extracted_prices = []
+
         return (
             valid_queries, 
             validation_attempts_count,
             extracted_candidates_list, 
-            identified_page_candidates_list
+            identified_page_candidates_list,
+            extracted_prices  # 🆕 NEW: Products with price information, sorted by price
         ) 

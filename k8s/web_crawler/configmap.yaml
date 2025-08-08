@@ -38,8 +38,8 @@ data:
   CRAWLER_VIEWPORT_HEIGHT: "1080"
   
   # Domain and Pattern Settings
-  CRAWLER_ALLOWED_DOMAINS: "ai.pydantic.dev,example.com"
-  CRAWLER_SITE_URL: "https://ai.pydantic.dev,https://example.com"
+  CRAWLER_ALLOWED_DOMAINS: ""
+  CRAWLER_SITE_URL: ""
   CRAWLER_EXCLUDE_PATTERNS: "*.pdf,*.jpg,*.png,*.gif,*.zip,*.doc,*.docx,*.xls,*.xlsx,*.ppt,*.pptx,*.png"
 
   # Cleanup Settings

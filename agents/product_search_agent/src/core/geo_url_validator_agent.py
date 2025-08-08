@@ -520,20 +520,24 @@ Respond with ONLY a JSON array of enhanced queries, like: ["enhanced query 1", "
         urls_text = "\n".join([f"- {url}" for url in urls])
         
         # Use system prompt for instructions and user prompt for the task
-        system_prompt = f"""You are a URL classifier that identifies e-commerce websites serving {location_context}.
+        system_prompt = f"""You are a STRICT URL classifier for {location_context} e-commerce validation.
 
-TASK: Return URLs that can be accessed and purchased from by people in {location_context}.
+TASK: Return ONLY URLs from {location_context} domains that serve local customers.
 
 RESPONSE FORMAT: Valid JSON array only. No explanations, no markdown, no additional text.
 Example: ["url1", "url2"] or []
 
-INCLUDE ONLY URLs that meet ALL these criteria:
-1. Domain ends with .{self.country.lower()} (country-specific domain)
-2. OR domain contains "{self.country.lower()}" in the domain name itself
-3. OR domain is a known retailer that serves {location_context} market
-4. OR URL path contains "/{self.country.lower()}/" or "/{self.city.lower() if self.city else 'montevideo'}/"
+STRICT CRITERIA - INCLUDE ONLY if domain meets ONE of these:
+1. Ends with .{self.country.lower()} (like example.{self.country.lower()})
+2. Ends with .com.{self.country.lower()} (like example.com.{self.country.lower()})
+3. Contains "{self.country.lower()}" directly in domain name (like {self.country.lower()}shop.com)
 
-CRITICAL: Only include URLs where people in {location_context} can actually purchase products. Exclude URLs from other countries' domains unless they specifically serve {location_context}.
+EXCLUDE ALL:
+- .com domains WITHOUT {self.country.lower()} in domain name
+- Domains from other countries (.com.ar, .com.br, .com.co, .com.pe, .cl, .mx)
+- International sites (.com, .org, .net) unless domain name contains "{self.country.lower()}"
+
+EXAMPLES TO EXCLUDE: amazon.com, semillabreadshop.com, plazavea.com.pe, mercadolibre.com.ar
 
 Return ONLY the JSON array."""
 
@@ -592,8 +596,19 @@ Return only the JSON array of URLs that serve {location_context}:"""
                 # Ensure all returned URLs were in the original list
                 valid_responses = [url for url in validated_urls if url in urls]
                 
-                self.logger.info(f"LLM validated {len(valid_responses)} URLs as {self.country}-relevant")
-                return valid_responses
+                # CRITICAL: Add programmatic safety check to filter out obvious foreign domains
+                foreign_domains = ['.mx', '.pe', '.ar', '.br', '.cl', '.co', '.cr', '.es', '.pt']
+                final_responses = []
+                for url in valid_responses:
+                    url_lower = url.lower()
+                    is_foreign = any(url_lower.endswith(domain) or f"{domain}/" in url_lower for domain in foreign_domains)
+                    if is_foreign:
+                        self.logger.warning(f"SAFETY: Filtering out foreign URL that LLM incorrectly validated: {url}")
+                    else:
+                        final_responses.append(url)
+                
+                self.logger.info(f"LLM validated {len(valid_responses)} URLs, safety filter passed {len(final_responses)} URLs as {self.country}-relevant")
+                return final_responses
                 
         except json.JSONDecodeError as e:
             self.logger.error(f"Failed to parse LLM response as JSON: {e}. Raw response: '{response_text if 'response_text' in locals() else 'N/A'}'")

@@ -8,8 +8,6 @@ import asyncio
 import aiohttp
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
-from datetime import datetime
-from urllib.parse import urljoin
 from .logging import setup_logger
 
 # Set up logger
@@ -44,6 +42,23 @@ class CrawlResponse:
     total_urls: int
     crawled_urls: int
     elapsed_time: float
+    error: Optional[str] = None
+
+@dataclass
+class SingleCrawlRequest:
+    """Request for crawling a single URL."""
+    url: str
+    respect_robots: bool = False
+    timeout: int = 180000
+    extract_links: bool = True
+    bypass_cache: bool = False
+
+@dataclass 
+class SingleCrawlResponse:
+    """Response from single URL crawl."""
+    success: bool
+    result: Optional[CrawlResult] = None
+    elapsed_time: float = 0.0
     error: Optional[str] = None
 
 class WebCrawlerClient:
@@ -181,11 +196,83 @@ class WebCrawlerClient:
         except Exception as e:
             logger.error(f"Crawl request failed with error: {str(e)}")
             raise Exception(f"Error during crawl request: {str(e)}")
+    
+    async def crawl_single(
+        self,
+        url: str,
+        respect_robots: Optional[bool] = None,
+        timeout: Optional[int] = None,
+        extract_links: Optional[bool] = None,
+        bypass_cache: Optional[bool] = None
+    ) -> SingleCrawlResponse:
+        """Crawl a single URL for detailed content extraction.
+        
+        Args:
+            url: URL to crawl
+            respect_robots: Whether to respect robots.txt rules
+            timeout: Timeout in milliseconds for the request
+            extract_links: Whether to extract links from the page
+            bypass_cache: Whether to bypass cache and force fresh crawl
+            
+        Returns:
+            SingleCrawlResponse: The crawl result for the single URL
+            
+        Raises:
+            Exception: If the crawl request fails
+        """
+        request = SingleCrawlRequest(
+            url=url,
+            respect_robots=respect_robots if respect_robots is not None else False,
+            timeout=timeout if timeout is not None else 180000,
+            extract_links=extract_links if extract_links is not None else True,
+            bypass_cache=bypass_cache if bypass_cache is not None else False
+        )
+        
+        crawl_url = f"{self.base_url}/crawl-single"
+        payload = asdict(request)
+        logger.debug(f"Sending single crawl request to: {crawl_url}")
+        logger.debug(f"Request payload: {json.dumps(payload, indent=2)}")
+        
+        try:
+            async with self.session.post(
+                crawl_url,
+                json=payload,
+                timeout=20
+            ) as response:
+                logger.debug(f"Single crawl response status: {response.status}")
+                
+                if response.status != 200:
+                    error_text = await response.text()
+                    logger.error(f"Single crawl request failed with status {response.status}: {error_text}")
+                    raise Exception(f"Single crawl request failed: {error_text}")
+                    
+                data = await response.json()
+                logger.debug(f"Single crawl response data: {json.dumps(data, indent=2)}")
+                
+                # Convert result to CrawlResult object if successful
+                result = None
+                if data.get("success") and data.get("result"):
+                    result_data = data["result"]
+                    result = CrawlResult(
+                        url=result_data["url"],
+                        title=result_data.get("title"),
+                        text=result_data["text"],
+                        links=result_data["links"],
+                        metadata=result_data.get("metadata", {})
+                    )
+                    
+                return SingleCrawlResponse(
+                    success=data["success"],
+                    result=result,
+                    elapsed_time=data["elapsed_time"],
+                    error=data.get("error")
+                )
+                
+        except Exception as e:
+            logger.error(f"Single crawl request failed with error: {str(e)}")
+            raise Exception(f"Error during single crawl request: {str(e)}")
 
 if __name__ == "__main__":
-    # Set up logging for the example
-    logging.basicConfig(level=logging.DEBUG)
-    
     async def example():
         """Example usage of the web crawler client."""
         async with WebCrawlerClient() as client:

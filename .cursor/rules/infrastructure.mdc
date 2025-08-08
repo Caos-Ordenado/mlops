@@ -4,6 +4,11 @@ alwaysApply: false
 ---
 # Home Server Infrastructure Overview
 
+## Hardware
+- Intel i9 13900k with aand 32 ram
+- GeForce MSI nvidia 4070ti 
+- 32 Gb Ram 
+
 ## Core Components
 - MicroK8s cluster on home server
 - Tailscale VPN for remote access

@@ -32,7 +32,8 @@ async def search(
                 api_results, # List[str] of validated queries
                 validation_attempts,
                 extracted_candidates,
-                identified_page_candidates # New 4th value
+                identified_page_candidates, # 4th value
+                extracted_prices # 🆕 NEW: 5th value - products with prices
             ) = await agent.search_product(product)
         
         return ProductSearchResponse(
@@ -40,7 +41,8 @@ async def search(
             results=api_results, 
             validation_attempts=validation_attempts,
             extracted_product_candidates=extracted_candidates, # Kept for now
-            identified_page_candidates=identified_page_candidates # Pass to response model
+            identified_page_candidates=identified_page_candidates, # Pass to response model
+            extracted_prices=extracted_prices # 🆕 NEW: Include price extraction results
         )
     except Exception as e:
         logger.error(f"Error in /search: {e}", exc_info=True)

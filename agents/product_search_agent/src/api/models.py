@@ -40,9 +40,37 @@ class IdentifiedPageCandidate(BaseModel):
 #     valid: bool
 #     reason: Optional[str] = None
 
+class PriceExtractionResult(BaseModel):
+    """Result from price extraction for a single product."""
+    success: bool
+    price: Optional[float] = None
+    currency: Optional[str] = None  # "UYU", "USD", etc.
+    original_text: Optional[str] = None  # Original price text found
+    confidence: Optional[float] = None  # 0.0 to 1.0
+    error: Optional[str] = None
+
+class ProductWithPrice(BaseModel):
+    """Product information with extracted price data."""
+    url: str
+    product_name: Optional[str] = None
+    original_title: Optional[str] = None
+    source_query: str
+    
+    # Price information
+    price_extraction: PriceExtractionResult
+    
+    # Sort helper property
+    @property
+    def sort_price(self) -> float:
+        """Return price for sorting, or infinity if no price."""
+        if self.price_extraction.success and self.price_extraction.price is not None:
+            return self.price_extraction.price
+        return float('inf')
+
 class ProductSearchResponse(BaseModel):
     success: bool
     results: List[str] # Validated query strings
     extracted_product_candidates: Optional[List[ExtractedUrlInfo]] = None
     identified_page_candidates: Optional[List[IdentifiedPageCandidate]] = None
+    extracted_prices: Optional[List[ProductWithPrice]] = None  # 🆕 NEW: Price extraction results
     validation_attempts: int = 0 
