@@ -189,6 +189,45 @@ class SingleCrawlResponse(BaseModel):
         }
 
 
+class VisionExtractRequest(BaseModel):
+    """Request model for vision-based extraction using Playwright + Ollama."""
+    url: str = Field(..., description="URL to navigate and capture screenshot from")
+    fields: Optional[List[str]] = Field(
+        default_factory=lambda: ["name", "price", "currency", "availability"],
+        description="Fields to extract as JSON keys"
+    )
+    timeout: Optional[int] = Field(
+        default=60000,
+        gt=0,
+        description="Timeout in milliseconds for page navigation"
+    )
+    bypass_cache: Optional[bool] = Field(
+        default=True,
+        description="Bypass any internal caches (reserved for future use)"
+    )
+
+    @validator('url')
+    def validate_url(cls, v):
+        try:
+            result = urlparse(v)
+            if not all([result.scheme, result.netloc]):
+                raise ValueError('Invalid URL format: URL must include scheme and netloc')
+            if result.scheme not in ['http', 'https']:
+                raise ValueError('Invalid URL scheme: Only http and https are supported')
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise e
+            raise ValueError(f'Invalid URL format: {str(e)}')
+        return v
+
+
+class VisionExtractResponse(BaseModel):
+    """Response model for vision-based extraction endpoint."""
+    success: bool = Field(..., description="Whether extraction succeeded")
+    data: Optional[Dict[str, Any]] = Field(default=None, description="Extracted JSON data")
+    elapsed_time: float = Field(..., description="Time in seconds")
+    error: Optional[str] = Field(default=None, description="Error message if failed")
+
 class Config:
     json_schema_extra = {
         "example": {

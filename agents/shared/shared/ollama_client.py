@@ -12,7 +12,7 @@ from .logging import setup_logger
 logger = setup_logger(__name__)
 
 class OllamaClient:
-    """Client for interacting with Ollama LLM service."""
+    """Client for interacting with Ollama LLM service (text and vision)."""
     
     def __init__(self, base_url: str = "http://home.server:30080/ollama", model: str = "llama3.2"):
         """Initialize the Ollama client.
@@ -101,6 +101,77 @@ class OllamaClient:
         except Exception as e:
             logger.error(f"Generate request failed with error: {str(e)}")
             raise Exception(f"Error during Ollama request: {str(e)}")
+
+    async def chat(
+            self,
+            messages: list[dict],
+            model: Optional[str] = None,
+            format: Optional[str] = None,
+            stream: bool = False,
+            temperature: float = 0.2,
+            num_predict: int = 4096,
+        ) -> Dict[str, Any]:
+        """Generic chat API supporting images for vision models.
+
+        Args:
+            messages: List of message dicts. Each message can include an 'images' list with base64 strings.
+            model: Optional override model name.
+            format: Optional output format hint (e.g., "json").
+            stream: Whether to stream.
+            temperature: Sampling temperature.
+            num_predict: Max tokens to generate.
+
+        Returns:
+            Dict response from Ollama chat endpoint.
+        """
+        url = f"{self.base_url}/api/chat"
+        payload: Dict[str, Any] = {
+            "model": model or self.model,
+            "messages": messages,
+            "stream": stream,
+            "options": {
+                "temperature": temperature,
+                "num_predict": num_predict
+            }
+        }
+        if format:
+            payload["format"] = format
+
+        try:
+            async with self.session.post(url, json=payload) as response:
+                if response.status != 200:
+                    error_text = await response.text()
+                    logger.error(f"Chat request failed with status {response.status}: {error_text}")
+                    raise Exception(f"Chat request failed: {error_text}")
+                return await response.json()
+        except Exception as e:
+            logger.error(f"Chat request failed with error: {str(e)}")
+            raise Exception(f"Error during Ollama chat: {str(e)}")
+
+    async def extract_from_image(
+            self,
+            image_base64: str,
+            instruction: str,
+            model: Optional[str] = None,
+            format: str = "json",
+        ) -> str:
+        """Convenience helper to perform vision extraction from a single image.
+
+        Returns the assistant content (string). Use JSON-only instructions and format="json" to get structured output.
+        """
+        messages = [{
+            "role": "user",
+            "content": instruction,
+            "images": [image_base64]
+        }]
+        data = await self.chat(messages=messages, model=model, format=format, stream=False)
+        # Newer Ollama chat returns { message: { content } } or { choices } depending on version
+        if isinstance(data, dict):
+            if "message" in data and isinstance(data["message"], dict):
+                return (data["message"].get("content") or "").strip()
+            if "response" in data:
+                return str(data.get("response", "")).strip()
+        return str(data)
             
     async def health_check(self) -> bool:
         """Check if the Ollama service is healthy.

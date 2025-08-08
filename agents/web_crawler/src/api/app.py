@@ -6,14 +6,30 @@ import asyncio
 import time
 import hashlib
 from typing import Optional, Tuple
-from .models import CrawlRequest, CrawlResponse, CrawlResult, SingleCrawlRequest, SingleCrawlResponse
+from .models import (
+    CrawlRequest,
+    CrawlResponse,
+    CrawlResult,
+    SingleCrawlRequest,
+    SingleCrawlResponse,
+    VisionExtractRequest,
+    VisionExtractResponse,
+)
 from fastapi import FastAPI, HTTPException, Response, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from shared import setup_logger, DatabaseContext, DatabaseConfig
+from shared import setup_logger, DatabaseContext, DatabaseConfig, OllamaClient
 import os
 from dotenv import load_dotenv
 
 from ..core import WebCrawlerAgent, CrawlerSettings
+import json
+import base64
+
+try:
+    from playwright.async_api import async_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except Exception:
+    PLAYWRIGHT_AVAILABLE = False
 
 # Initialize logger
 logger = setup_logger("web_crawler.api")
@@ -414,6 +430,98 @@ async def health_check():
     except Exception:
         # Always return 200 for basic health check to prevent restart loops
         return {"status": "ok", "database": "error"}
+
+
+@app.post(
+    "/extract-vision",
+    response_model=VisionExtractResponse,
+    status_code=200,
+    summary="Navigate with Playwright, screenshot, and extract via Ollama vision",
+    tags=["Vision Extraction"]
+)
+async def extract_vision(request: VisionExtractRequest) -> VisionExtractResponse:
+    """Navigate to a URL with Playwright, take full-page screenshot, and extract fields using Ollama vision model."""
+    if not PLAYWRIGHT_AVAILABLE:
+        raise HTTPException(status_code=500, detail="Playwright is not installed in this service")
+
+    start_time = time.time()
+    logger.info(f"Starting vision extraction for: {request.url}")
+
+    headless = os.getenv("CRAWLER_HEADLESS", "true").lower() == "true"
+    viewport_width = int(os.getenv("CRAWLER_VIEWPORT_WIDTH", "1920"))
+    viewport_height = int(os.getenv("CRAWLER_VIEWPORT_HEIGHT", "1080"))
+
+    ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://home.server:30080/ollama")
+    ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5vl:7b")
+
+    try:
+        # 1) Render page and capture screenshot
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=headless,
+                args=[
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                ],
+            )
+            context = await browser.new_context(viewport={"width": viewport_width, "height": viewport_height})
+            page = await context.new_page()
+            await page.goto(request.url, wait_until="networkidle", timeout=request.timeout)
+            # Ensure lazy content loads
+            await page.wait_for_timeout(500)
+            image_bytes = await page.screenshot(full_page=True, type="png")
+            await context.close()
+            await browser.close()
+
+        image_b64 = base64.b64encode(image_bytes).decode("ascii")
+
+        # 2) Build strict JSON instruction
+        fields = request.fields or ["name", "price", "currency", "availability"]
+        keys_csv = ", ".join(fields)
+        instruction = (
+            "You are extracting structured data from a webpage screenshot. "
+            f"Return JSON only with keys: {keys_csv}. "
+            "For missing values use null. Do not include extra keys or text."
+        )
+
+        # 3) Call Ollama vision
+        async with OllamaClient(base_url=ollama_base_url, model=ollama_model) as llm:
+            content = await llm.extract_from_image(
+                image_base64=image_b64,
+                instruction=instruction,
+                model=ollama_model,
+                format="json",
+            )
+
+        # 4) Parse JSON
+        data = None
+        try:
+            data = json.loads(content)
+        except Exception:
+            # Attempt to coerce to JSON if the model added text
+            try:
+                content_stripped = content.strip().strip("` ")
+                if content_stripped.startswith("json"):
+                    content_stripped = content_stripped[4:].strip()
+                data = json.loads(content_stripped)
+            except Exception as e:
+                elapsed = time.time() - start_time
+                logger.error(f"Failed to parse JSON from Ollama response: {content[:200]}...")
+                return VisionExtractResponse(success=False, data=None, elapsed_time=elapsed, error=str(e))
+
+        elapsed = time.time() - start_time
+        logger.info(f"Vision extraction succeeded for {request.url} in {elapsed:.2f}s")
+        return VisionExtractResponse(success=True, data=data, elapsed_time=elapsed)
+
+    except asyncio.TimeoutError:
+        elapsed = time.time() - start_time
+        logger.error(f"Timeout during vision extraction for {request.url}")
+        raise HTTPException(status_code=408, detail=f"Request timed out after {elapsed:.2f}s")
+    except Exception as e:
+        elapsed = time.time() - start_time
+        logger.error(f"Error during vision extraction for {request.url}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

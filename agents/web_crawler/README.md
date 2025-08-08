@@ -135,7 +135,22 @@ The FastAPI server will be available at:
 - ReDoc UI: http://localhost:8000/redoc
 
 ### API Endpoints
- - Check openapi.json
+  - Check openapi.json
+  - Vision Extraction
+
+    Request
+    {
+      "url": "https://example.com/product",
+      "fields": ["name", "price", "currency", "availability"],
+      "timeout": 60000
+    }
+
+    Response
+    {
+      "success": true,
+      "data": {"name": "...", "price": 123.45, "currency": "USD", "availability": "In stock"},
+      "elapsed_time": 1.23
+    }
 
 ## Output and Logging
 
@@ -194,6 +209,22 @@ Available in the shared namespace:
 - Inside cluster: `redis.shared.svc.cluster.local:6379`
 
 When using Redis storage:
-- Use the correct service DNS name
-- Monitor Redis memory usage for large crawls
-""" 
+ - Use the correct service DNS name
+ - Monitor Redis memory usage for large crawls
+
+### Vision Extraction Endpoint
+
+- Path: `/extract-vision`
+- Purpose: Navigate with Playwright (Chromium), capture a full-page screenshot, and extract structured fields using the Ollama vision model.
+- Uses non-sensitive env vars: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
+
+Example curl
+```bash
+curl -s http://home.server:30081/crawler/extract-vision \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/product",
+    "fields": ["name", "price", "currency", "availability"],
+    "timeout": 60000
+  }'
+```

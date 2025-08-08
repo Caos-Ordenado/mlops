@@ -261,11 +261,92 @@
         ],
         "priority": "high",
         "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Implement Playwright Screenshot and Structured Data Extraction Endpoint",
+        "description": "Create a new web crawler endpoint that uses Playwright to navigate to a page, take a full-page screenshot, and extract structured data fields using the Ollama qwen2.5vl:7b model.",
+        "details": "This task involves implementing a new endpoint in the web crawler service that combines visual and textual analysis:\n\n1. Create a new endpoint `/api/v1/extract-structured-data`:\n   - Accept URL parameter and optional fields to extract (default: name, price, currency, availability)\n   - Implement request validation and error handling\n\n2. Extend the WebCrawlerClient to support Playwright integration:\n   ```python\n   class WebCrawlerClient:\n       # Existing methods...\n       \n       async def crawl_with_screenshot(self, url: str) -> tuple[str, bytes]:\n           \"\"\"Navigate to URL and return both HTML content and full-page screenshot\"\"\"\n           async with async_playwright() as p:\n               browser = await p.chromium.launch()\n               page = await browser.new_page()\n               await page.goto(url, wait_until=\"networkidle\")\n               html_content = await page.content()\n               screenshot = await page.screenshot(full_page=True)\n               await browser.close()\n               return html_content, screenshot\n   ```\n\n3. Create a new StructuredDataExtractor class that uses the Ollama client:\n   ```python\n   class StructuredDataExtractor:\n       def __init__(self, ollama_client, model_name=\"qwen2.5vl:7b\"):\n           self.ollama_client = ollama_client\n           self.model_name = model_name\n           \n       async def extract_fields(self, html_content: str, screenshot: bytes, \n                               fields: list[str]) -> dict:\n           \"\"\"Extract structured data from HTML and screenshot using Ollama VLM\"\"\"\n           # Convert screenshot to base64\n           screenshot_b64 = base64.b64encode(screenshot).decode('utf-8')\n           \n           # Craft prompt for the VLM\n           prompt = f\"\"\"Extract the following fields from this product page: {', '.join(fields)}\n           Return ONLY a valid JSON object with these fields as keys.\n           If a field cannot be found, set its value to null.\"\"\"\n           \n           # Call Ollama with both text and image\n           response = await self.ollama_client.generate_with_context(\n               model=self.model_name,\n               prompt=prompt,\n               images=[screenshot_b64],\n               context={\"html\": html_content[:10000]}  # Truncate HTML if needed\n           )\n           \n           # Parse JSON response\n           try:\n               return json.loads(response.text)\n           except json.JSONDecodeError:\n               # Fallback: attempt to extract JSON from text response\n               return self._extract_json_from_text(response.text)\n   ```\n\n4. Implement the new endpoint handler:\n   ```python\n   @router.get(\"/api/v1/extract-structured-data\")\n   async def extract_structured_data(\n       request: Request,\n       url: str = Query(..., description=\"URL to extract data from\"),\n       fields: str = Query(\"name,price,currency,availability\", \n                          description=\"Comma-separated fields to extract\")\n   ):\n       try:\n           # Get shared clients from request context\n           web_crawler_client = request.app.state.web_crawler_client\n           ollama_client = request.app.state.ollama_client\n           logger = request.app.state.logger\n           \n           # Parse fields\n           field_list = [f.strip() for f in fields.split(\",\")]\n           \n           # Crawl page with screenshot\n           logger.info(f\"Crawling {url} with screenshot for structured data extraction\")\n           html_content, screenshot = await web_crawler_client.crawl_with_screenshot(url)\n           \n           # Extract structured data\n           extractor = StructuredDataExtractor(\n               ollama_client, \n               model_name=os.environ.get(\"OLLAMA_MODEL\", \"qwen2.5vl:7b\")\n           )\n           structured_data = await extractor.extract_fields(\n               html_content, screenshot, field_list\n           )\n           \n           return {\n               \"url\": url,\n               \"extracted_data\": structured_data,\n               \"fields_requested\": field_list\n           }\n       except Exception as e:\n           logger.error(f\"Error extracting structured data: {str(e)}\")\n           raise HTTPException(\n               status_code=500, \n               detail=f\"Failed to extract structured data: {str(e)}\"\n           )\n   ```\n\n5. Update Dockerfile to install Playwright and Chromium:\n   ```dockerfile\n   # Install Playwright and browsers\n   RUN pip install playwright\n   RUN playwright install chromium\n   RUN playwright install-deps chromium\n   ```\n\n6. Add environment variables to deployment configuration:\n   - OLLAMA_BASE_URL: URL of the Ollama server (default: http://ollama-service:11434)\n   - OLLAMA_MODEL: Model to use for extraction (default: qwen2.5vl:7b)\n\n7. Update README with endpoint documentation and environment variable descriptions",
+        "testStrategy": "1. Unit Testing:\n   - Create unit tests for the StructuredDataExtractor class with mocked Ollama responses\n   - Test JSON parsing logic with various response formats\n   - Test error handling for malformed responses\n   - Test field filtering functionality\n\n2. Integration Testing:\n   - Set up a test environment with a local Ollama server running qwen2.5vl:7b\n   - Create integration tests that call the endpoint with real URLs\n   - Verify screenshot capture functionality works correctly\n   - Test with various e-commerce product pages to ensure field extraction accuracy\n   - Measure response times and optimize if necessary\n\n3. Edge Case Testing:\n   - Test with pages that load content dynamically via JavaScript\n   - Test with pages that have unusual layouts or structures\n   - Test with non-product pages to verify graceful handling\n   - Test with very large pages to ensure performance\n\n4. Environment Variable Testing:\n   - Verify the endpoint correctly uses OLLAMA_BASE_URL and OLLAMA_MODEL\n   - Test fallback behavior when environment variables are not set\n   - Test with different Ollama models to compare extraction quality\n\n5. Docker Build Verification:\n   - Build the Docker image and verify Playwright and Chromium are correctly installed\n   - Test the containerized application to ensure screenshot functionality works\n   - Verify browser dependencies are correctly installed\n\n6. Documentation Testing:\n   - Verify README accurately describes the new endpoint\n   - Test example API calls provided in documentation\n   - Ensure environment variable documentation is clear and complete",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2,
+          7
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Extend WebCrawlerClient with Playwright Integration",
+            "description": "Implement the crawl_with_screenshot method in the WebCrawlerClient class to navigate to a URL and capture both HTML content and a full-page screenshot using Playwright.",
+            "dependencies": [],
+            "details": "Add the async method crawl_with_screenshot to the WebCrawlerClient class that launches a Playwright browser, navigates to the specified URL, waits for network idle, captures the HTML content and a full-page screenshot, then closes the browser and returns both. Include error handling for navigation failures and timeouts.",
+            "status": "pending",
+            "testStrategy": "Create unit tests with mocked Playwright responses. Test error handling for navigation failures. Create integration tests with real URLs to verify screenshot capture works correctly."
+          },
+          {
+            "id": 2,
+            "title": "Create StructuredDataExtractor Class",
+            "description": "Implement a new class that uses the Ollama client with the qwen2.5vl:7b model to extract structured data fields from HTML content and screenshots.",
+            "dependencies": [
+              "15.1"
+            ],
+            "details": "Create the StructuredDataExtractor class with methods to extract specified fields from HTML and screenshot data. Implement base64 encoding for the screenshot, craft appropriate prompts for the VLM, call the Ollama client with both text and image inputs, and parse the JSON response. Include fallback logic for handling malformed JSON responses.",
+            "status": "pending",
+            "testStrategy": "Unit test with mocked Ollama responses for various field combinations. Test JSON parsing with well-formed and malformed responses. Test the fallback extraction logic with different response formats."
+          },
+          {
+            "id": 3,
+            "title": "Implement Extract Structured Data Endpoint",
+            "description": "Create a new API endpoint that accepts a URL and optional fields to extract, then uses the WebCrawlerClient and StructuredDataExtractor to return structured data.",
+            "dependencies": [
+              "15.1",
+              "15.2"
+            ],
+            "details": "Implement the /api/v1/extract-structured-data endpoint handler that validates input parameters, calls the WebCrawlerClient to get HTML and screenshot data, instantiates the StructuredDataExtractor, extracts the requested fields, and returns a structured response. Include comprehensive error handling and logging.",
+            "status": "pending",
+            "testStrategy": "Test the endpoint with various valid and invalid input combinations. Verify error responses for invalid URLs and server errors. Test with different field combinations to ensure correct extraction."
+          },
+          {
+            "id": 4,
+            "title": "Update Dockerfile for Playwright Support",
+            "description": "Modify the Dockerfile to install Playwright and the required Chromium browser dependencies.",
+            "dependencies": [],
+            "details": "Update the Dockerfile to include commands for installing Playwright via pip, installing the Chromium browser, and installing the necessary system dependencies for Chromium to run headlessly in a container environment.",
+            "status": "pending",
+            "testStrategy": "Build the Docker image and verify Playwright and Chromium are correctly installed. Test running a simple Playwright script inside the container to ensure the browser launches successfully."
+          },
+          {
+            "id": 5,
+            "title": "Configure Environment Variables and Deployment Settings",
+            "description": "Add the necessary environment variables and update deployment configuration to support the new structured data extraction functionality.",
+            "dependencies": [
+              "15.3",
+              "15.4"
+            ],
+            "details": "Add environment variable definitions for OLLAMA_BASE_URL and OLLAMA_MODEL with appropriate default values. Update deployment configuration files (docker-compose.yml, Kubernetes manifests, etc.) to include these variables. Ensure the service has appropriate resource allocations for running Playwright.",
+            "status": "pending",
+            "testStrategy": "Test deployment with different environment variable configurations. Verify the service correctly connects to the Ollama server. Test with different model specifications to ensure flexibility."
+          },
+          {
+            "id": 6,
+            "title": "Update Documentation and Create Usage Examples",
+            "description": "Update the README and API documentation to include information about the new endpoint, required environment variables, and usage examples.",
+            "dependencies": [
+              "15.3",
+              "15.5"
+            ],
+            "details": "Add comprehensive documentation for the new /api/v1/extract-structured-data endpoint, including parameter descriptions, response format, and error codes. Create usage examples showing how to extract different field combinations. Document the environment variables and their default values. Include information about the Ollama model requirements and limitations.",
+            "status": "pending",
+            "testStrategy": "Review documentation for accuracy and completeness. Test the provided examples to ensure they work as documented. Have team members review the documentation for clarity and usability."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-08-05T19:29:45.107Z",
-      "updated": "2025-08-05T21:58:53.017Z",
+      "updated": "2025-08-08T00:56:21.537Z",
       "description": "Tasks for master context"
     }
   }

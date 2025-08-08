@@ -29,7 +29,10 @@ COPY web_crawler/README.md /app/README.md
 
 # Install web crawler dependencies (only web crawler specific deps due to optimized pyproject.toml)
 RUN pip install -e . && \
-    pip list | grep -E "(fastapi|uvicorn|lxml|psutil)" | head -10
+    pip list | grep -E "(fastapi|uvicorn|lxml|psutil|playwright)" | head -10
+
+# Install Playwright Chromium and required OS deps (as root)
+RUN python -m playwright install --with-deps chromium
 
 # Change ownership of app directory to appuser
 RUN chown -R appuser:appuser /app

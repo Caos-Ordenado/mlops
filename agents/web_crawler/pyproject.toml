@@ -21,6 +21,7 @@ dependencies = [
   "psutil>=5.9.0",
   "aioredis>=2.0.0",
   "requests>=2.25.0",
+  "playwright>=1.45.0",
   # Note: shared dependencies (aiohttp, python-dateutil, python-dotenv, 
   # sqlalchemy, alembic, asyncpg, redis, loguru, beautifulsoup4, pydantic, 
   # pgvector) are provided by the shared package

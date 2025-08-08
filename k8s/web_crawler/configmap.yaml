@@ -46,3 +46,7 @@ data:
   CRAWLER_CLEANUP_INTERVAL_HOURS: "24"
   CRAWLER_DATA_RETENTION_DAYS: "30" 
   CRAWLER_LOG_LEVEL: "INFO"
+
+  # Ollama settings (non-sensitive)
+  OLLAMA_BASE_URL: "http://ollama.default.svc.cluster.local:11434" 
+  OLLAMA_MODEL: "qwen2.5vl:7b"
