@@ -25,15 +25,17 @@ alwaysApply: false
 3. argocd:
    - ArgoCD deployment (v2.8.4)
 
-4. default:
-   - Ollama LLM service
-   - Web crawler service
+ 4. default:
+    - Ollama LLM service (http://home.server:30080/ollama)
+    - Web crawler service (http://home.server:30080/crawler)
+    - Renderer service (Playwright-as-a-Service) (http://home.server:30080/renderer)
 
 ## Directory Structure
 ```
 k8s/
 ├── argocd/         # ArgoCD deployment
 ├── ollama/         # Ollama service
+├── renderer/       # Playwright renderer service
 ├── secrets/        # Secret management
 ├── shared/         # Shared infrastructure
 ├──── postgres/     # Postgres

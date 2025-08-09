@@ -1,0 +1,29 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: renderer-ingress
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: PathPrefix(`/renderer`)
+      kind: Rule
+      middlewares:
+        - name: renderer-stripprefix
+      services:
+        - name: renderer
+          namespace: default
+          port: 8000
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: renderer-stripprefix
+  namespace: default
+spec:
+  stripPrefix:
+    prefixes:
+      - /renderer
+
+

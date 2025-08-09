@@ -45,7 +45,7 @@ def remove_json_comments(s):
     return s
 
 class ProductPageCandidateIdentifierAgent:
-    def __init__(self, model_name="phi3", temperature=0.1):
+    def __init__(self, model_name="qwen3:latest", temperature=0.1):
         self.model_name = model_name
         self.temperature = temperature
         logger.info(f"ProductPageCandidateIdentifierAgent initialized with model: {model_name}, temp: {temperature}")
@@ -157,7 +157,8 @@ Remember: Do NOT include any comments, explanations, or text outside or inside t
                     prompt=user_prompt,
                     system=system_prompt,
                     model=self.model_name,
-                    temperature=self.temperature
+                    temperature=self.temperature,
+                    format="json"
                 )
             logger.debug(f"LLM raw response for {url_info.url}: {response_text}")
             cleaned_response_text = strip_json_code_block(response_text)

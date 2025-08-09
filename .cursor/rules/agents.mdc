@@ -13,6 +13,11 @@ alwaysApply: true
 - All agents must use environment variables for configuration, not hardcoded values.
 - All agents must follow the cache strategy and best practices described in `database.mdc`.
 
+## LLM Usage
+- Prefer Qwen family for strict JSON outputs: `qwen2.5:7b` for generation/validation; `qwen3:latest` for classification; fallback `gpt-oss:20b`.
+- Use `format:"json"` and `temperature: 0.0` for validators/extractors.
+- Keep responses minimal; do not emit markdown fences when JSON is expected.
+
 ## Example Usage
 
 ```python

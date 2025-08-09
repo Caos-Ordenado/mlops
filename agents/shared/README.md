@@ -16,7 +16,8 @@ from shared import (
     DatabaseContext,
     RedisClient,
     WebCrawlerClient,
-    OllamaClient
+    OllamaClient,
+    RendererClient,
 )
 
 # Set up logging
@@ -39,7 +40,18 @@ async with WebCrawlerClient() as crawler:
 
 # Use Ollama LLM
 async with OllamaClient() as llm:
-    # LLM operations here
+    # Structured JSON response
+    response = await llm.generate(
+        prompt="Return ONLY JSON per schema...",
+        model="qwen2.5:7b",
+        temperature=0.0,
+        num_predict=512,
+        format="json",
+    )
+
+# Use the Renderer service (Playwright over HTTP)
+async with RendererClient(base_url="http://renderer.default.svc.cluster.local:8000") as renderer:
+    # Playwright renderer operations here
     pass
 ```
 
@@ -145,13 +157,33 @@ async with OllamaClient() as llm:
     # Advanced options
     response = await llm.generate(
         prompt="Your prompt here",
-        model="llama3.2",
+        model="qwen3:latest",
         temperature=0.7,
         num_predict=500,
+        format=None,
     )
 ```
 
-### 4. Redis Client
+### 4. Renderer Client (Playwright-as-a-Service)
+- Use `RendererClient` to call the dedicated renderer service for screenshots or HTML rendering.
+- Prefer this over bundling Playwright in agents.
+
+```python
+from shared.renderer_client import RendererClient
+
+async with RendererClient(base_url=os.getenv("RENDERER_URL", "http://renderer.default.svc.cluster.local:8000")) as renderer:
+    data = await renderer.render_html(
+        url="https://example.com",
+        wait_for_selector="body",
+        timeout_ms=30000,
+    )
+    # data: { "url": str, "html": str, "text": str }
+```
+
+Env vars:
+- `RENDERER_URL` (default depends on deployment; in-cluster: `http://renderer.default.svc.cluster.local:8000`)
+
+### 5. Redis Client
 Thread-safe Redis client with connection pooling:
 
 ```python
@@ -171,7 +203,7 @@ async with RedisClient() as redis:
     value = await redis.hget("hash_key", "field1")
 ```
 
-### 5. Logging System
+### 6. Logging System
 Standardized logging configuration:
 
 ```python
@@ -207,6 +239,9 @@ REDIS_PASSWORD=<get_password_from_secret_manager>
 
 # Logging Configuration
 LOG_LEVEL=DEBUG  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# Renderer Service
+RENDERER_URL=http://renderer.default.svc.cluster.local:8000
 ```
 
 ## Best Practices

@@ -25,8 +25,7 @@ class WebCrawlerTriggerService:
         via the web_crawler_service's own saving mechanism.
 
         Returns:
-            bool: True if the crawl task was successfully triggered and the service
-                  reported no errors, False otherwise.
+            bool: True if the crawl task was successfully triggered.
         """
         if not urls_to_crawl:
             logger.warning("No URLs provided to trigger crawl.")
@@ -53,15 +52,14 @@ class WebCrawlerTriggerService:
                     # Other parameters like timeout, max_concurrent_pages will use defaults from shared client
                 )
 
-                if response.error:
-                    logger.error(f"Crawl triggered but service reported an error: {response.error}")
-                    # Depending on desired behavior, this might still be considered a 'successful trigger'
-                    # if the main goal is just to make sure the request reached the crawler service.
-                    # For now, we'll say if the service itself reports an error, the trigger wasn't fully successful.
-                    return False # Or True, if partial success is acceptable for a 'trigger'
-                else:
-                    logger.info(f"Crawl successfully triggered for URLs. Total URLs processed by crawler: {response.total_urls}")
-                    return True
+                if not response.success:
+                    logger.error("Crawl trigger reported unsuccessful status from service response.")
+                    return False
+                logger.info(
+                    f"Crawl successfully triggered for URLs. Total URLs received: {response.total_urls}, "
+                    f"crawled: {response.crawled_urls}"
+                )
+                return True
 
         except Exception as e:
             logger.error(f"Failed to trigger crawl due to an exception: {e}", exc_info=True)

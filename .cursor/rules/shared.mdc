@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description: Shared agent utilities and clients (logging, renderer, web crawler, Ollama)
+globs: agents/shared/**
 alwaysApply: true
 ---
 # Shared Agent Utilities
@@ -25,10 +25,21 @@ alwaysApply: true
   - Type hints and dataclasses
   - Error handling
 
+### Renderer Client (Playwright-as-a-Service)
+- Base URL: http://home.server:30080/renderer
+- Use instead of bundling Playwright in agents.
+- Methods:
+  - `screenshot(url, wait_for_selector="body", timeout_ms=30000, viewport_width=1280, viewport_height=800)` → JSON with `screenshot_b64`
+  - `render_html(url, wait_for_selector="body", timeout_ms=30000, viewport_width=1280, viewport_height=800)` → JSON with `html`, `text`
+
 ### Ollama Client
 - Base URL: http://home.server:30080/ollama
 - Async interface for LLM interactions
-- Default model: llama3.1
+- Default model: llama3.2
+- For strict JSON extraction/classification, prefer Qwen family per LLM rules:
+  - Generation/validation: `qwen2.5:7b` with `format="json"`, `temperature=0.0`
+  - Classification/light tools: `qwen3:latest`
+  - Fallback: `gpt-oss:20b`
 
 ## Best Practices
 1. Use shared package for all logging
@@ -58,6 +69,14 @@ async with WebCrawlerClient() as client:
     )
 ```
 
+### Renderer
+```python
+from shared.renderer_client import RendererClient
+
+async with RendererClient(base_url=os.getenv("RENDERER_URL")) as renderer:
+    data = await renderer.screenshot(url="https://example.com")
+```
+
 ### Ollama
 ```python
 from shared.ollama_client import OllamaClient
@@ -65,6 +84,44 @@ from shared.ollama_client import OllamaClient
 async with OllamaClient() as llm:
     response = await llm.generate(
         "Your prompt here",
-        model="llama3.1"
+        model="llama3.2"
     )
 ``` 
+
+### JSON-only extraction (recommended)
+```python
+from shared.ollama_client import OllamaClient
+
+schema_hint = "Return ONLY JSON with keys: {\"price\": number, \"currency\": string}"
+
+async with OllamaClient() as llm:
+    text = await llm.generate(
+        prompt=f"{schema_hint}\n\nExtract fields from the given content...",
+        model="qwen2.5:7b",
+        temperature=0.0,
+        format="json",
+    )
+    # text is a JSON string
+```
+
+### Vision extraction from renderer screenshot
+```python
+import base64
+from shared.ollama_client import OllamaClient
+from shared.renderer_client import RendererClient
+
+async with RendererClient(base_url=os.getenv("RENDERER_URL", "http://home.server:30080/renderer")) as renderer,
+          OllamaClient() as llm:
+    shot = await renderer.screenshot(url="https://example.com/product")
+    instruction = (
+        "Extract product price and currency from this screenshot. "
+        "Respond ONLY in JSON with keys price (number) and currency (string)."
+    )
+    result = await llm.extract_from_image(
+        image_base64=shot["screenshot_b64"],
+        instruction=instruction,
+        model="qwen2.5vl:7b",
+        format="json",
+    )
+    # result is a JSON string
+```

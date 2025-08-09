@@ -74,7 +74,7 @@ def strip_json_code_block(text: str) -> str:
     return text
 
 class QueryValidatorAgent:
-    def __init__(self, model_name="phi3", temperature=0.1):
+    def __init__(self, model_name="qwen2.5:7b", temperature=0.0):
         self.model_name = model_name
         self.temperature = temperature
         self.llm_client = OllamaClient()
@@ -106,7 +106,8 @@ class QueryValidatorAgent:
                 prompt=user_prompt,
                 system=QUERY_VALIDATOR_SYSTEM_PROMPT,
                 model=self.model_name,
-                temperature=self.temperature
+                temperature=0.0,
+                format="json"
             )
             logger.debug(f"Validator Ollama raw response: {raw_llm_response}")
             cleaned_response = strip_json_code_block(raw_llm_response)

@@ -10,7 +10,7 @@ WORKDIR /app
 RUN pip install --upgrade pip
 
 # Set pip cache directory and other optimizations
-ENV PIP_NO_CACHE_DIR=false \
+ENV PIP_NO_CACHE_DIR=true \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DEFAULT_TIMEOUT=100 \
@@ -19,7 +19,7 @@ ENV PIP_NO_CACHE_DIR=false \
 # Copy and install shared module first (this provides base dependencies)
 COPY shared/ /app/shared/
 RUN cd /app/shared && \
-    pip install -e . && \
+    pip install --no-cache-dir -e . && \
     pip list | grep -E "(shared|sqlalchemy|redis|aiohttp|loguru)" | head -10
 
 # Copy web crawler files  
@@ -28,11 +28,8 @@ COPY web_crawler/pyproject.toml /app/pyproject.toml
 COPY web_crawler/README.md /app/README.md
 
 # Install web crawler dependencies (only web crawler specific deps due to optimized pyproject.toml)
-RUN pip install -e . && \
+RUN pip install --no-cache-dir -e . && \
     pip list | grep -E "(fastapi|uvicorn|lxml|psutil|playwright)" | head -10
-
-# Install Playwright Chromium and required OS deps (as root)
-RUN python -m playwright install --with-deps chromium
 
 # Change ownership of app directory to appuser
 RUN chown -R appuser:appuser /app

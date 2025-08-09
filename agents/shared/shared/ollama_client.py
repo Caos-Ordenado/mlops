@@ -41,7 +41,8 @@ class OllamaClient:
             model: Optional[str] = None,
             system: Optional[str] = None,
             temperature: float = 0.2,
-            num_predict: int = 4096
+            num_predict: int = 4096,
+            format: Optional[str] = None,
         ) -> str:
         """Generate text using the Ollama API.
         
@@ -71,6 +72,8 @@ class OllamaClient:
         
         if system:
             payload["system"] = system
+        if format:
+            payload["format"] = format
         
         try:
             async with self.session.post(url, json=payload) as response:

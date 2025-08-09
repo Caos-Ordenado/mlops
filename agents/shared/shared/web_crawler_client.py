@@ -7,59 +7,21 @@ import json
 import asyncio
 import aiohttp
 from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, asdict
 from .logging import setup_logger
+from .interfaces.web_crawler import (
+    CrawlRequest,
+    CrawlResult,
+    CrawlResponse,
+    SingleCrawlRequest,
+    SingleCrawlResponse,
+    VisionExtractRequest,
+    VisionExtractResponse,
+)
 
 # Set up logger
 logger = setup_logger(__name__)
 
-@dataclass
-class CrawlRequest:
-    """Request for crawling web pages."""
-    urls: List[str]
-    max_pages: int = 10000
-    max_depth: int = 20
-    allowed_domains: Optional[List[str]] = None
-    exclude_patterns: Optional[List[str]] = None
-    respect_robots: bool = False
-    timeout: int = 180000
-    max_total_time: int = 300
-    max_concurrent_pages: int = 10
-
-@dataclass
-class CrawlResult:
-    """Result from crawling a web page."""
-    url: str
-    title: Optional[str]
-    text: str
-    links: List[str]
-    metadata: Dict[str, Any]
-
-@dataclass
-class CrawlResponse:
-    """Response from the web crawler service."""
-    results: List[CrawlResult]
-    total_urls: int
-    crawled_urls: int
-    elapsed_time: float
-    error: Optional[str] = None
-
-@dataclass
-class SingleCrawlRequest:
-    """Request for crawling a single URL."""
-    url: str
-    respect_robots: bool = False
-    timeout: int = 180000
-    extract_links: bool = True
-    bypass_cache: bool = False
-
-@dataclass 
-class SingleCrawlResponse:
-    """Response from single URL crawl."""
-    success: bool
-    result: Optional[CrawlResult] = None
-    elapsed_time: float = 0.0
-    error: Optional[str] = None
+from pydantic import BaseModel
 
 class WebCrawlerClient:
     """Client for interacting with the web crawler API."""
@@ -154,7 +116,7 @@ class WebCrawlerClient:
         )
         
         url = f"{self.base_url}/crawl"
-        payload = asdict(request)
+        payload = request.model_dump(mode="json") if isinstance(request, BaseModel) else request
         logger.debug(f"Sending crawl request to: {url}")
         logger.debug(f"Request payload: {json.dumps(payload, indent=2)}")
         
@@ -175,7 +137,7 @@ class WebCrawlerClient:
                 logger.debug(f"Crawl response data: {json.dumps(data, indent=2)}")
                 
                 # Convert results to CrawlResult objects
-                results = []
+                results: list[CrawlResult] = []
                 for result in data.get("results", []):
                     results.append(CrawlResult(
                         url=result["url"],
@@ -184,13 +146,13 @@ class WebCrawlerClient:
                         links=result["links"],
                         metadata=result.get("metadata", {})
                     ))
-                    
+
                 return CrawlResponse(
+                    success=bool(data.get("success", True)),
                     results=results,
-                    total_urls=data["total_urls"],
-                    crawled_urls=data["crawled_urls"],
-                    elapsed_time=data["elapsed_time"],
-                    error=data.get("error")
+                    total_urls=int(data.get("total_urls", len(results))),
+                    crawled_urls=int(data.get("crawled_urls", len(results))),
+                    elapsed_time=float(data.get("elapsed_time", 0.0)),
                 )
                 
         except Exception as e:
@@ -229,7 +191,7 @@ class WebCrawlerClient:
         )
         
         crawl_url = f"{self.base_url}/crawl-single"
-        payload = asdict(request)
+        payload = request.model_dump(mode="json") if isinstance(request, BaseModel) else request
         logger.debug(f"Sending single crawl request to: {crawl_url}")
         logger.debug(f"Request payload: {json.dumps(payload, indent=2)}")
         
@@ -271,6 +233,42 @@ class WebCrawlerClient:
         except Exception as e:
             logger.error(f"Single crawl request failed with error: {str(e)}")
             raise Exception(f"Error during single crawl request: {str(e)}")
+
+    async def extract_vision(
+        self,
+        url: str,
+        fields: Optional[List[str]] = None,
+        timeout: int = 60000
+    ) -> VisionExtractResponse:
+        """Call the vision extraction endpoint to extract structured fields from a rendered screenshot.
+
+        Args:
+            url: The page URL to render and analyze
+            fields: Optional list of keys to extract (e.g., ["name","price","currency","availability"])
+            timeout: Navigation timeout in ms
+        """
+        request = VisionExtractRequest(url=url, fields=fields, timeout=timeout)
+        vision_url = f"{self.base_url}/extract-vision"
+        payload = request.model_dump(mode="json") if isinstance(request, BaseModel) else request
+        logger.debug(f"Sending vision extract request to: {vision_url} | Payload: {json.dumps(payload)[:200]}...")
+
+        try:
+            async with self.session.post(
+                vision_url,
+                json=payload,
+                timeout=60
+            ) as response:
+                logger.debug(f"Vision extract response status: {response.status}")
+                data = await response.json()
+                return VisionExtractResponse(
+                    success=bool(data.get("success")),
+                    data=data.get("data"),
+                    elapsed_time=float(data.get("elapsed_time", 0.0)),
+                    error=data.get("error")
+                )
+        except Exception as e:
+            logger.error(f"Vision extract request failed with error: {str(e)}")
+            raise Exception(f"Error during vision extract request: {str(e)}")
 
 if __name__ == "__main__":
     async def example():

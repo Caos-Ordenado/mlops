@@ -1,6 +1,6 @@
 import json
 import re
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from shared.logging import setup_logger
 from shared.ollama_client import OllamaClient
 from shared.web_crawler_client import WebCrawlerClient
@@ -9,7 +9,7 @@ from src.api.models import IdentifiedPageCandidate, ProductWithPrice, PriceExtra
 logger = setup_logger("price_extractor_agent")
 
 class PriceExtractorAgent:
-    def __init__(self, model_name: str = "phi3:latest", temperature: float = 0.0):
+    def __init__(self, model_name: str = "qwen2.5:7b", temperature: float = 0.0):
         """
         Initialize PriceExtractorAgent with LLM-based price extraction.
         
@@ -40,10 +40,10 @@ class PriceExtractorAgent:
         """
         logger.info(f"Starting price extraction for {len(identified_pages)} page candidates")
         
-        # Filter for PRODUCT and CATEGORY pages (catalog pages can contain multiple products with prices)
+        # Strictly keep PRODUCT pages; ignore CATEGORY/OTHER and non-Uruguay exclusions
         product_pages = [
-            page for page in identified_pages 
-            if page.page_type in ["PRODUCT", "CATEGORY"]
+            page for page in identified_pages
+            if getattr(page, 'page_type', None) == "PRODUCT"
         ]
         
         logger.info(f"Filtered to {len(product_pages)} PRODUCT and CATEGORY pages for price extraction")
@@ -90,13 +90,47 @@ class PriceExtractorAgent:
                     ))
                     continue
                 
-                # Extract price(s) using LLM (handles both single products and catalog pages)
+                # Extract price using LLM as single product (catalog handled upstream)
                 products_from_page = await self._extract_products_with_llm(
                     page_content=page_content,
                     url=page.url,
                     product_name=page.identified_product_name or "unknown product",
-                    page_type=page.page_type
+                    page_type="PRODUCT"
                 )
+
+                # Vision fallback: if nothing found or low-confidence, try rendered screenshot extraction
+                need_vision = False
+                try:
+                    if not products_from_page:
+                        need_vision = True
+                    else:
+                        # if single product result with low confidence or missing price
+                        if len(products_from_page) == 1:
+                            pr = products_from_page[0].get('price_extraction')
+                            if not pr or not getattr(pr, 'success', False) or getattr(pr, 'confidence', 0.0) < 0.6:
+                                need_vision = True
+                except Exception:
+                    need_vision = True
+
+                if need_vision and (
+                    "rappi.com.uy" not in page.url and
+                    "evisos.com.uy" not in page.url and
+                    "wikipedia.org" not in page.url and
+                    "acg.com.uy" not in page.url
+                ):
+                    logger.info(f"Attempting vision fallback for {page.url}")
+                    vision_data = await self._extract_with_vision(page.url)
+                    if vision_data:
+                        products_from_page = [{
+                            'product_name': page.identified_product_name or vision_data.get('name') or 'unknown product',
+                            'price_extraction': PriceExtractionResult(
+                                success=True,
+                                price=self._coerce_price(vision_data.get('price')),
+                                currency=self._normalize_currency(vision_data.get('currency')),
+                                original_text=str(vision_data.get('price')),
+                                confidence=0.75
+                            )
+                        }]
                 
                 # Add all extracted products from this page
                 for product_result in products_from_page:
@@ -242,6 +276,44 @@ class PriceExtractorAgent:
                 )
             }]
 
+    async def _extract_with_vision(self, url: str) -> Optional[Dict[str, Any]]:
+        """Call vision endpoint to extract fields from a rendered screenshot."""
+        try:
+            async with WebCrawlerClient() as client:
+                resp = await client.extract_vision(
+                    url=url,
+                    fields=["name", "price", "currency", "availability"],
+                    timeout=60000,
+                )
+                if resp.success and resp.data:
+                    return resp.data
+                logger.warning(f"Vision extraction failed for {url}: {resp.error}")
+                return None
+        except Exception as e:
+            logger.error(f"Vision extraction error for {url}: {e}")
+            return None
+
+    def _coerce_price(self, price_val: Any) -> Optional[float]:
+        """Coerce price from string/number to float using existing direct parser where needed."""
+        if price_val is None:
+            return None
+        try:
+            return float(price_val)
+        except Exception:
+            parsed = self._parse_price_directly(str(price_val))
+            return parsed
+
+    def _normalize_currency(self, currency: Optional[str]) -> Optional[str]:
+        if not currency:
+            return None
+        c = str(currency).upper().strip()
+        if c in ("UYU", "USD", "EUR", "GBP"):
+            return c
+        # Heuristics
+        if c in ("$", "UY$", "U$S", "US$", "U$U"):
+            return "UYU" if c in ("$", "UY$", "U$U") else "USD"
+        return c
+
     async def _extract_with_catalog_detection(self, page_content: str, url: str, product_name: str) -> dict:
         """
         Extract products with automatic catalog detection based on actual page content.
@@ -259,7 +331,8 @@ class PriceExtractorAgent:
                     system=system_prompt,
                     model=self.model_name,
                     temperature=self.temperature,
-                    num_predict=800  # Allow more tokens for multi-product responses
+                    num_predict=800,  # Allow more tokens for multi-product responses
+                    format="json"
                 )
                 
                 logger.debug(f"Catalog detection LLM response for {url}: {response[:300]}...")
@@ -369,7 +442,8 @@ Extract as JSON:"""
                     system=system_prompt,
                     model=self.model_name,
                     temperature=self.temperature,
-                    num_predict=300  # Limit response length
+                    num_predict=300,  # Limit response length
+                    format="json"
                 )
                 
                 logger.debug(f"LLM response for {url}: {response[:200]}...")

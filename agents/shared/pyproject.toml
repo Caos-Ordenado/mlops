@@ -13,6 +13,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
   "aiohttp>=3.9.0",
+  "aioredis>=2.0.1",
   "python-dateutil>=2.8.2",
   "python-dotenv>=1.0.0",
   "sqlalchemy>=2.0.0",

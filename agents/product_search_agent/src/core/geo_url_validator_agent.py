@@ -204,10 +204,10 @@ class GeoUrlValidatorAgent:
         # Use phi3 for classification tasks - it's better at following JSON output instructions
         # deepseek-r1 is a reasoning model that outputs thinking process, not suitable for direct classification
         try:
-            return OllamaClient(model="phi3:latest")
+            return OllamaClient(model="qwen3:latest")
         except Exception as e:
-            self.logger.warning(f"Failed to initialize phi3:latest model: {e}. Falling back to llama3.2:1b")
-            return OllamaClient(model="llama3.2:1b")
+            self.logger.warning(f"Failed to initialize qwen3:latest model: {e}. Falling back to phi3:latest")
+            return OllamaClient(model="phi3:latest")
     
     def _setup_logging(self):
         """
@@ -313,7 +313,8 @@ Respond with ONLY a JSON array of enhanced queries, like: ["enhanced query 1", "
                 response = await llm.generate(
                     prompt=prompt,
                     temperature=0.5,  # Medium creativity for query variation
-                    num_predict=150   # Limit tokens for concise responses
+                    num_predict=150,   # Limit tokens for concise responses
+                    format="json"
                 )
                 
                 # Parse LLM response
@@ -554,39 +555,43 @@ Return only the JSON array of URLs that serve {location_context}:"""
                     prompt=user_prompt,
                     system=system_prompt,
                     temperature=0.0,  # Zero temperature for maximum determinism
-                    num_predict=200   # Reduced for concise JSON-only responses
+                    num_predict=200,   # Reduced for concise JSON-only responses
+                    format="json"
                 )
                 
                 # Parse LLM response
                 import json
-                response_text = response.strip()
-                
-                # Check if response is empty
+                response_text = (response or "").strip()
+
                 if not response_text:
                     self.logger.warning("LLM returned empty response for URL validation")
                     return []
-                
+
                 self.logger.debug(f"Raw LLM response for URL validation: {response_text}")
-                
-                # Clean up potential markdown formatting
+
+                # Strip markdown fences
                 if response_text.startswith('```json'):
-                    response_text = response_text.replace('```json', '').replace('```', '').strip()
+                    response_text = response_text[len('```json'):].strip()
+                    if response_text.endswith('```'):
+                        response_text = response_text[:-3].strip()
                 elif response_text.startswith('```'):
-                    response_text = response_text.replace('```', '').strip()
-                
-                # Remove any text before the first '[' or after the last ']'
+                    response_text = response_text[3:].strip()
+                    if response_text.endswith('```'):
+                        response_text = response_text[:-3].strip()
+
+                # Extract first JSON array between [ and ]
                 start_idx = response_text.find('[')
                 end_idx = response_text.rfind(']')
-                
-                if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-                    response_text = response_text[start_idx:end_idx + 1]
-                
-                # Additional check after cleaning
-                if not response_text:
-                    self.logger.warning("LLM response became empty after cleaning")
+                if start_idx == -1 or end_idx == -1 or end_idx <= start_idx:
+                    self.logger.error("No JSON array found in LLM response after cleaning")
                     return []
-                
-                validated_urls = json.loads(response_text)
+                cleaned_json = response_text[start_idx:end_idx + 1]
+
+                try:
+                    validated_urls = json.loads(cleaned_json)
+                except json.JSONDecodeError as e:
+                    self.logger.error(f"Failed to parse cleaned JSON array: {e}. Cleaned: {cleaned_json[:200]}")
+                    return []
                 
                 # Ensure response is a list
                 if not isinstance(validated_urls, list):

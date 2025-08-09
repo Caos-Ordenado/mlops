@@ -15,7 +15,7 @@ K8S_DIR="../../k8s/web_crawler"
 
 # Function to clean up temporary files
 cleanup() {
-    rm -f /tmp/${IMAGE_NAME}.tar
+    rm -f /tmp/${IMAGE_NAME}.tar /tmp/${IMAGE_NAME}.tar.gz
     rm -f /tmp/web-crawler-config.env
     if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
         rm -rf "$TEMP_DIR"
@@ -58,6 +58,32 @@ echo "Copying web crawler files..."
 mkdir -p "$TEMP_DIR/web_crawler"
 cp -r ./* "$TEMP_DIR/web_crawler/"
 
+# Provide a .dockerignore at the build context root to shrink context (if present locally)
+if [ -f ".dockerignore" ]; then
+  cp .dockerignore "$TEMP_DIR/.dockerignore"
+else
+  # Create a sensible default .dockerignore to speed up build context upload
+  cat > "$TEMP_DIR/.dockerignore" <<'EOF'
+.git
+**/__pycache__/**
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.mypy_cache/**
+**/.pytest_cache/**
+**/.ruff_cache/**
+**/.venv/**
+**/venv/**
+**/env/**
+**/dist/**
+**/build/**
+**/*.egg-info/**
+.DS_Store
+web_crawler/.env
+k8s/**
+EOF
+fi
+
 # Build the image from the temporary directory with retry logic
 echo "Building Docker image (this may take a few minutes)..."
 cd "$TEMP_DIR"
@@ -88,20 +114,25 @@ fi
 # Return to original directory
 cd - > /dev/null
 
-# Save and transfer image
-echo "💾 Saving Docker image..."
-docker save ${IMAGE_NAME}:${IMAGE_TAG} -o /tmp/${IMAGE_NAME}.tar
+# Save and transfer image (compressed)
+echo "💾 Saving and compressing Docker image..."
+if command -v pigz >/dev/null 2>&1; then
+  # Use pigz for faster parallel compression when available
+  docker save ${IMAGE_NAME}:${IMAGE_TAG} | pigz -c > /tmp/${IMAGE_NAME}.tar.gz
+else
+  docker save ${IMAGE_NAME}:${IMAGE_TAG} | gzip -c > /tmp/${IMAGE_NAME}.tar.gz
+fi
 
-echo "📤 Copying image to home server..."
-if sshpass -p "${REMOTE_PASS}" scp /tmp/${IMAGE_NAME}.tar ${REMOTE_USER}@${REMOTE_HOST}:/tmp/; then
+echo "📤 Copying compressed image to home server..."
+if sshpass -p "${REMOTE_PASS}" scp -C /tmp/${IMAGE_NAME}.tar.gz ${REMOTE_USER}@${REMOTE_HOST}:/tmp/; then
     echo "✅ Image copied successfully"
 else
     echo "❌ Failed to copy image to remote server"
     exit 1
 fi
 
-echo "📥 Importing image into microk8s..."
-if sshpass -p "${REMOTE_PASS}" ssh ${REMOTE_USER}@${REMOTE_HOST} "echo '${REMOTE_PASS}' | sudo -S microk8s ctr image import /tmp/${IMAGE_NAME}.tar && rm /tmp/${IMAGE_NAME}.tar"; then
+echo "📥 Importing image into microk8s (decompressing on remote)..."
+if sshpass -p "${REMOTE_PASS}" ssh ${REMOTE_USER}@${REMOTE_HOST} "set -e; echo '${REMOTE_PASS}' | sudo -S sh -c 'gunzip -c /tmp/${IMAGE_NAME}.tar.gz | microk8s ctr image import -'; rm -f /tmp/${IMAGE_NAME}.tar.gz"; then
     echo "✅ Image imported successfully"
 else
     echo "❌ Failed to import image on remote server"

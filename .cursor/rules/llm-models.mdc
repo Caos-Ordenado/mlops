@@ -7,3 +7,8 @@ alwaysApply: false
 - phi3:latest
 - deepseek-r1:1.5b
 - llama3.2:1b
+- gpt-oss:20b
+- qwen2.5vl:7b
+- qwen2.5:7b
+- qwen2.5-coder:7b
+- qwen3:latest

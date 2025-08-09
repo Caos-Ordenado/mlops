@@ -7,6 +7,7 @@ from .url_extractor_agent import UrlExtractorAgent
 from .product_page_candidate_identifier import ProductPageCandidateIdentifierAgent
 from .price_extractor import PriceExtractorAgent
 from .geo_url_validator_agent import GeoUrlValidatorAgent
+from .category_expansion_agent import CategoryExpansionAgent
 
 # Updated service imports
 from .web_crawler_trigger_service import WebCrawlerTriggerService
@@ -36,6 +37,7 @@ class ProductSearchAgent:
         self.url_extractor = UrlExtractorAgent()
         self.page_identifier = ProductPageCandidateIdentifierAgent() # Assuming no crawler tool passed now
         self.price_extractor = PriceExtractorAgent()
+        self.category_expander = CategoryExpansionAgent()
         
         # Initialize geographic URL validator
         self.url_validator = GeoUrlValidatorAgent(country=country, city=city)
@@ -208,6 +210,45 @@ class ProductSearchAgent:
             identified_page_candidates_list = await self.page_identifier.identify_batch_page_types(
                 extracted_candidates_list, product
             )
+
+        # Phase 2.7: Expand category pages into likely product pages and re-validate
+        if identified_page_candidates_list:
+            # Keep only relevant candidate types from identification step
+            identified_page_candidates_list = [
+                c for c in identified_page_candidates_list
+                if getattr(c, 'page_type', None) in ('PRODUCT', 'CATEGORY')
+            ]
+
+            category_urls = [c.url for c in identified_page_candidates_list if getattr(c, 'page_type', None) == 'CATEGORY']
+            if category_urls:
+                expanded = await self.category_expander.expand(category_urls)
+                if expanded:
+                    try:
+                        search_query = valid_queries[0] if valid_queries else product
+                        expanded_valid = await self.url_validator.validate_urls(expanded, search_query)
+                    except Exception:
+                        expanded_valid = expanded
+
+                    # Preserve existing PRODUCT candidates as-is
+                    preserved_products: list[IdentifiedPageCandidate] = [
+                        c for c in identified_page_candidates_list if getattr(c, 'page_type', None) == 'PRODUCT'
+                    ]
+
+                    # Add expanded CATEGORY-derived URLs as new PRODUCT candidates (avoid duplicates)
+                    existing_urls = {c.url for c in preserved_products}
+                    for u in expanded_valid:
+                        if u not in existing_urls:
+                            preserved_products.append(
+                                IdentifiedPageCandidate(
+                                    url=u,
+                                    page_type='PRODUCT',
+                                    original_title="",
+                                    source_query=product,
+                                    identified_product_name=""
+                                )
+                            )
+
+                    identified_page_candidates_list = preserved_products
         
         logger.debug(f"Returning from search_product. Type of identified_page_candidates_list: {type(identified_page_candidates_list)}")
         if isinstance(identified_page_candidates_list, list):

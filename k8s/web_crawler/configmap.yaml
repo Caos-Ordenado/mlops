@@ -50,3 +50,6 @@ data:
   # Ollama settings (non-sensitive)
   OLLAMA_BASE_URL: "http://ollama.default.svc.cluster.local:11434" 
   OLLAMA_MODEL: "qwen2.5vl:7b"
+  
+  # Renderer service URL (internal)
+  RENDERER_URL: "http://renderer.default.svc.cluster.local:8000"

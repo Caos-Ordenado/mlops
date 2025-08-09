@@ -1,0 +1,71 @@
+---
+description: Renderer (Playwright-as-a-Service) usage and API
+globs: agents/renderer/**, agents/shared/**
+alwaysApply: false
+---
+
+### Overview
+- Service: Renderer (Playwright-as-a-Service)
+- Base URL: `http://home.server:30080/renderer`
+- Purpose: Reliable screenshots and HTML render without bundling Playwright into each agent
+
+### Health
+- GET `/renderer/health`
+  - Returns `{ status, playwright, browser_ready }`
+
+### POST `/renderer/screenshot`
+- Request body matches `shared.interfaces.renderer.RendererScreenshotRequest`:
+  - `url` (HttpUrl)
+  - `wait_for_selector` (default: `body`)
+  - `timeout_ms` (default: 30000)
+  - `viewport_width`/`viewport_height` (defaults from `RENDERER_VIEWPORT_WIDTH/HEIGHT`)
+  - `wait_until`: `load | domcontentloaded | networkidle` (default: `domcontentloaded`)
+  - `full_page` (bool)
+  - `full_page_strategy`: `native | scroll` (default: `scroll`)
+  - Scrolling/cropping controls: `scroll_pause_ms`, `max_scroll_steps`, `wait_network_idle_ms`, `detect_fixed`, `header_crop_px`, `footer_crop_px`, `stable_ticks`
+- Response:
+  - `{ url, screenshot_b64, content_type: "image/jpeg", saved_path? }`
+
+### POST `/renderer/render-html`
+- Same request model as screenshot; returns `{ url, html, text }`
+
+### Environment
+- `RENDERER_HEADLESS` (default: `true`)
+- `RENDERER_SNAPSHOT_DIR` (default: `/tmp/renderer-snapshots`)
+- `RENDERER_SNAPSHOT_TTL_SECONDS` (default: `86400`)
+- `RENDERER_CLEANUP_INTERVAL_SECONDS` (default: `3600`)
+- `RENDERER_VIEWPORT_WIDTH` (default: `1280`)
+- `RENDERER_VIEWPORT_HEIGHT` (default: `800`)
+
+### Client Usage
+```python
+from shared.renderer_client import RendererClient
+
+async with RendererClient(base_url=os.getenv("RENDERER_URL", "http://home.server:30080/renderer")) as renderer:
+    img = await renderer.screenshot(url="https://example.com", full_page=True)
+    html = await renderer.render_html(url="https://example.com")
+```
+
+### LLM Integration Example (Vision)
+```python
+from shared.renderer_client import RendererClient
+from shared.ollama_client import OllamaClient
+
+async with RendererClient(base_url=os.getenv("RENDERER_URL", "http://home.server:30080/renderer")) as renderer, 
+          OllamaClient() as llm:
+    shot = await renderer.screenshot(url="https://example.com/product")
+    result = await llm.extract_from_image(
+        image_base64=shot["screenshot_b64"],
+        instruction=(
+            "Extract product price and currency. "
+            "Respond ONLY as JSON with keys price (number), currency (string)."
+        ),
+        model="qwen2.5vl:7b",
+        format="json",
+    )
+```
+
+### Notes
+- Service aborts fonts to reduce long waits; aligns timeouts with request.
+- Implements scroll-based stitching with optional fixed header/footer detection.
+- Stores JPEG in `RENDERER_SNAPSHOT_DIR` with metadata JSON for traceability.

@@ -7,17 +7,17 @@ logger = setup_logger("query_generator")
 
 # System prompt to guide the LLM for generating search queries
 SYSTEM_PROMPT = """
-You are a Web Search Query Generator AI. Your task is to generate 8 optimized search queries for finding a specific product online, focusing on purchase intent in Uruguay, specifically Montevideo. The queries should be suitable for e-commerce sites and general web search engines.
+You are a Web Search Query Generator AI. Your task is to generate 5 optimized search queries for finding a specific product online, focusing on purchase intent in Uruguay, specifically Montevideo. The queries should be suitable for e-commerce sites and general web search engines.
 
 Requirements:
-1. Generate exactly 8 distinct queries.
+1. Generate exactly 5 distinct queries.
 2. **Purchase Intent**: include intent keywords such as "comprar", "precio", "oferta", "tienda", "online"
 3. **Product Clarity**:Iinsert the provided product name verbatim.
-4. **Location**: include "Montevideo" and/or "Uruguay" in at least 6 of the 8 queries.
+4. **Location**: include "Montevideo" and/or "Uruguay" in at least 4 of the 5 queries.
 5. **Natural phrasing**: emulate how local shoppers search; vary structure (e.g. brand + product, product + feature, generic product type + location).
 6. Avoid overly technical terms unless part of the product name.
 7. **Format**:
-    - Output ONLY a JSON array of 8 strings.
+    - Output ONLY a JSON array of 5 strings.
     - No surrounding text, line breaks, or comments.
 
 IMPORTANT: 
@@ -32,7 +32,7 @@ Example of a good query: "tienda bicicleta GT 2025 Montevideo"
 Example of a bad query: "impermeables invierno" (too broad, likely to return category pages, not related to Uruguay)
 
 
-Return a JSON array of 8 strings, with each string being a search query.
+Return a JSON array of 5 strings, with each string being a search query.
 Ensure the output is ONLY the JSON array, with no other text or explanations.
 Ensure that each query string within the JSON array is a single line and does not contain any newline characters (e.g., \n).
 """
@@ -77,7 +77,7 @@ def strip_json_code_block(text: str) -> str:
     return text
 
 class QueryGeneratorAgent:
-    def __init__(self, model_name="phi3", temperature=0.1):
+    def __init__(self, model_name="qwen3:latest", temperature=0.1):
         self.model_name = model_name
         self.temperature = temperature
         self.llm_client = OllamaClient()
@@ -104,25 +104,30 @@ class QueryGeneratorAgent:
                 prompt=user_prompt,
                 system=SYSTEM_PROMPT,
                 model=self.model_name,
-                temperature=self.temperature
+                temperature=0.0,
+                format="json"
             )
             logger.debug(f"Ollama response: {raw_llm_response}")
             
             clean_response = strip_json_code_block(raw_llm_response)
-            queries = json.loads(clean_response)
-            
-            if not isinstance(queries, list):
-                if isinstance(queries, str):
-                    try:
-                        potential_list = json.loads(queries)
-                        if isinstance(potential_list, list):
-                            queries = potential_list
-                        else:
-                            raise ValueError("Ollama did not return a JSON array after reparsing string.")
-                    except json.JSONDecodeError:
-                        raise ValueError(f"Ollama did not return a valid JSON array. Raw after strip: {clean_response if 'clean_response' in locals() else 'N/A'}")
+            parsed = json.loads(clean_response)
+
+            # Accept either a raw JSON array or an object with { "queries": [...] }
+            if isinstance(parsed, dict) and "queries" in parsed and isinstance(parsed["queries"], list):
+                queries = parsed["queries"]
+            elif isinstance(parsed, list):
+                queries = parsed
+            elif isinstance(parsed, str):
+                # Sometimes models wrap JSON in a string; try one more parse
+                potential_list = json.loads(parsed)
+                if isinstance(potential_list, list):
+                    queries = potential_list
+                elif isinstance(potential_list, dict) and isinstance(potential_list.get("queries"), list):
+                    queries = potential_list["queries"]
                 else:
-                    raise ValueError("Ollama did not return a JSON array")
+                    raise ValueError("Ollama did not return a JSON array or {queries: [...]}.")
+            else:
+                raise ValueError("Ollama did not return a JSON array or {queries: [...]}.")
             
             if not all(isinstance(q, str) for q in queries):
                 logger.warning(f"Ollama response contained non-string elements: {queries}. Filtering.")

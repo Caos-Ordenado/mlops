@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: renderer
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: renderer
+  template:
+    metadata:
+      labels:
+        app: renderer
+    spec:
+      containers:
+      - name: renderer
+        image: renderer:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: renderer-config
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+

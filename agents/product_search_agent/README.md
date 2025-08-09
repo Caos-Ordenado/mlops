@@ -246,3 +246,16 @@ BRAVE_SEARCH_API_KEY=your_api_key_here
 - **Performance optimized**: Parallel processing and efficient batching
 
 For detailed technical specifications, see [PRD.md](PRD.md). 
+
+## Model Defaults (LLM)
+
+- Query Generation: `qwen2.5:7b` (temperature 0.0, JSON format)
+- Query Validation: `qwen2.5:7b` (temperature 0.0, JSON format)
+- Product Page Classification: `qwen3:latest` (JSON format). Fallback: `qwen2.5:7b`.
+- Geo URL Validation: default client `qwen2.5:7b` (JSON format)
+- Price Extraction: `qwen2.5:7b` (JSON format). Fallback: `gpt-oss:20b` when needed.
+
+All LLM calls request strict JSON via `format:"json"` where supported.
+
+## Dependencies
+- **Ollama Integration**: LLM services (qwen2.5:7b, qwen3:latest, gpt-oss:20b)
