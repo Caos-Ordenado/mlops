@@ -61,10 +61,10 @@ The agent serves as a unified API endpoint that orchestrates multiple AI-powered
                    └─────────────┘ └─────────────┘
                             │             │
                             ▼             ▼
-                   ┌─────────────┐ ┌─────────────┐
-                   │ deepseek-r1 │ │ llama3.2    │
-                   │ 1.5b Model  │ │ Model       │
-                   └─────────────┘ └─────────────┘
+                   ┌──────────────┐ ┌───────────────┐
+                   │ qwen3:latest │ │ qwen3:latest  │
+                   │ 1.5b Model   │ │ Model         │
+                   └──────────────┘ └───────────────┘
 ```
 
 ### 3.2 Infrastructure Dependencies
@@ -77,8 +77,8 @@ The agent serves as a unified API endpoint that orchestrates multiple AI-powered
 #### Required Services
 - **Ollama LLM Service**: 
   - URL: `http://home.server:30080/ollama`
-  - Model: llama3.2 (default)
-  - Purpose: AI query generation and product page classification
+  - Models: qwen3:latest (primary), qwen2.5:7b, phi3:latest (fallback)
+  - Purpose: AI query generation, validation, URL validation, and product page classification
 
 - **Web Crawler Service**:
   - URL: `http://home.server:30081/crawler/`
@@ -106,14 +106,15 @@ The agent utilizes the `shared` package for common functionality:
 
 ### 4.1 Primary Workflow
 
-#### Phase 1: Query Generation
+#### Phase 1: Query Generation & Validation
 **Input**: Natural language product name (e.g., "crema para el cabello")
 **Process**: 
-- Uses Ollama LLM (llama3.2 model) to generate 5 optimized search queries
+- **Step 1.1**: Uses Ollama LLM (qwen3:latest model) to generate 5 optimized search queries
+- **Step 1.2**: Validates queries using qwen2.5:7b model to ensure relevance and purchase intent
 - Queries designed with purchase intent and geographic context
 - JSON-formatted output with specific search terms
 
-**Output**: List of targeted search queries (example for Uruguay market)
+**Output**: List of validated search queries (example for Uruguay market)
 ```json
 [
   "comprar crema para el cabello en Montevideo",
@@ -127,7 +128,7 @@ The agent utilizes the `shared` package for common functionality:
 **Note**: Query generation adapts to the specified country and city parameters, automatically incorporating relevant geographic terms, local language variations, and market-specific e-commerce platforms.
 
 #### Phase 2: Web Search Execution
-**Input**: Generated search queries
+**Input**: Validated search queries
 **Process**:
 - Executes parallel searches using Brave Search API
 - Aggregates results from all queries
@@ -139,7 +140,7 @@ The agent utilizes the `shared` package for common functionality:
 **Input**: Raw search results from Phase 2
 **Process**: 
 - Country-specific domain pattern matching (e.g., .uy, .com.uy for Uruguay; .ar, .com.ar for Argentina)
-- LLM-based contextual analysis using deepseek-r1:1.5b model with geographic prompts
+- LLM-based contextual analysis using qwen3:latest model with geographic prompts
 - Geographic indicator detection in URLs and metadata for the specified country/city
 - Business name pattern recognition for local retailers and e-commerce platforms
 - Multi-country support: UY, AR, BR, CL, CO, PE, EC, MX, US, ES
@@ -149,14 +150,16 @@ The agent utilizes the `shared` package for common functionality:
 **Input Parameters**: `country` (required, default: "UY"), `city` (optional)
 **Performance**: < 2 seconds per batch processing
 
-#### Phase 3: URL Extraction and Filtering
-**Input**: Raw search results
+#### Phase 3: URL Extraction and Pre-filtering
+**Input**: Geographic-validated search results
 **Process**:
-- Extracts unique URLs from search results
-- Removes duplicates and invalid URLs
-- Filters for relevant domains and content types
+- **Stage 1**: Pattern-based filtering using 22+ exclusion patterns (navigation, auth, files)
+- **Stage 2**: Advanced duplicate detection with URL normalization and domain rate limiting
+- **Stage 3**: LLM bulk classification for large URL sets (threshold: 20+ URLs)
+- Extracts unique URLs and removes invalid content types
+- Domain rate limiting (max 8 URLs per domain) to prevent over-representation
 
-**Output**: Curated list of candidate URLs
+**Output**: Pre-filtered, high-quality candidate URLs (50-90% reduction from input)
 
 #### Phase 4: Proactive Web Crawling
 **Input**: Extracted URLs
@@ -173,9 +176,9 @@ The agent utilizes the `shared` package for common functionality:
 #### Phase 5: Product Page Classification
 **Input**: Candidate URLs
 **Process**:
-- Uses Ollama LLM to classify URLs as product pages
+- Uses Ollama LLM (qwen3:latest) to classify URLs as product or category pages
 - Analyzes URL patterns, domain context, and available metadata
-- Binary classification with confidence scoring
+- Multi-class classification (PRODUCT, CATEGORY) with confidence scoring
 
 **Output**: Classified product page candidates
 ```json
@@ -186,6 +189,37 @@ The agent utilizes the `shared` package for common functionality:
       "classification": "product_page",
       "confidence": 0.95,
       "reasoning": "URL contains product identifier and domain is e-commerce"
+    }
+  ]
+}
+```
+
+#### Phase 6: Category Expansion (Optional)
+**Input**: URLs classified as CATEGORY pages
+**Process**:
+- Crawls category pages to extract individual product URLs
+- Validates extracted URLs against geographic criteria
+- Preserves existing PRODUCT page candidates
+
+**Output**: Expanded list of product page candidates
+
+#### Phase 7: Price Extraction
+**Input**: Identified product page candidates
+**Process**:
+- Uses Ollama LLM (qwen2.5:7b) to extract product prices and details
+- Analyzes page content, titles, and structured data
+- Returns products sorted by price
+
+**Output**: Products with extracted price information
+```json
+{
+  "products_with_prices": [
+    {
+      "url": "https://example.com/product/hair-cream",
+      "title": "Premium Hair Cream",
+      "price": 25.99,
+      "currency": "USD",
+      "availability": "in_stock"
     }
   ]
 }
@@ -250,29 +284,46 @@ The agent utilizes the `shared` package for common functionality:
 1. **QueryGeneratorAgent**
    - **File**: `src/core/query_generator.py`
    - **Purpose**: AI-powered search query generation
-   - **LLM Integration**: Ollama with structured prompting
+   - **LLM Integration**: Ollama with qwen3:latest model (temperature 0.0, JSON format)
 
-2. **SearchAgent**
+2. **QueryValidatorAgent**
+   - **File**: `src/core/query_validator.py`
+   - **Purpose**: Validates and filters generated search queries
+   - **LLM Integration**: Ollama with qwen2.5:7b model (temperature 0.0, JSON format)
+
+3. **SearchAgent**
    - **File**: `src/core/search_agent.py`
    - **Purpose**: External search API integration (Brave Search)
    - **Features**: Result aggregation and deduplication
 
-3. **UrlExtractorAgent**
+4. **UrlExtractorAgent**
    - **File**: `src/core/url_extractor_agent.py`
-   - **Purpose**: URL extraction and web crawling orchestration
+   - **Purpose**: URL extraction with intelligent pre-filtering and web crawling orchestration
+   - **Features**: 3-stage filtering pipeline (pattern-based → duplicate detection → LLM bulk classification)
+   - **Performance**: 50-90% URL reduction before downstream processing
    - **Integration**: Web Crawler Service trigger
 
-4. **GeoUrlValidatorAgent**
+5. **GeoUrlValidatorAgent**
    - **File**: `src/core/geo_url_validator_agent.py`
    - **Purpose**: Parametrized geographic validation of URLs for any country/city
-   - **LLM Integration**: Ollama with deepseek-r1:1.5b model
+   - **LLM Integration**: Ollama with qwen3:latest model (phi3:latest fallback)
    - **Features**: Multi-country domain patterns, contextual analysis, retry logic
    - **Countries Supported**: UY, AR, BR, CL, CO, PE, EC, MX, US, ES
 
-5. **ProductPageCandidateIdentifierAgent**
+6. **ProductPageCandidateIdentifierAgent**
    - **File**: `src/core/product_page_candidate_identifier.py`
    - **Purpose**: AI-powered product page classification
-   - **LLM Integration**: Ollama with classification prompting
+   - **LLM Integration**: Ollama with qwen3:latest model (temperature 0.1, JSON format)
+
+7. **PriceExtractorAgent**
+   - **File**: `src/core/price_extractor.py`
+   - **Purpose**: Extracts product prices from identified product pages
+   - **LLM Integration**: Ollama with qwen2.5:7b model (temperature 0.0, JSON format)
+
+8. **CategoryExpansionAgent**
+   - **File**: `src/core/category_expansion_agent.py`
+   - **Purpose**: Expands category pages into individual product page candidates
+   - **Integration**: Web Crawler Service for page analysis
 
 ### 5.2 Geographic URL Validator Agent
 
@@ -280,7 +331,8 @@ The agent utilizes the `shared` package for common functionality:
 The GeoUrlValidatorAgent is responsible for filtering search results to ensure they are relevant to the specified geographic location (country and optionally city). This component sits between Phase 2 (Web Search) and Phase 2.5 (URL Validation) in the workflow, providing configurable geographic localization for better product discovery across multiple markets.
 
 #### Model Selection
-- **Primary model**: deepseek-r1:1.5b
+- **Primary model**: qwen3:latest
+- **Fallback model**: phi3:latest
 - **Selection rationale**: Balance of accuracy and performance for classification tasks
 - **Optimized for**: Geographic context analysis and URL classification
 - **Performance**: Low latency (< 500ms per inference)
@@ -336,13 +388,16 @@ The GeoUrlValidatorAgent is responsible for filtering search results to ensure t
 
 #### LLM Integration
 - **Client**: `OllamaClient` from shared library
-- **Primary Model**: llama3.2 (query generation, product page classification)
-- **Validation Model**: deepseek-r1:1.5b (Geographic URL validation)
+- **Models in Use**:
+  - `qwen3:latest` (query generation, product page classification, geographic URL validation)
+  - `qwen2.5:7b` (query validation, price extraction)
+  - `phi3:latest` (fallback for geographic URL validation)
 - **Parameters**: 
-  - `temperature`: 0.3 (for consistent results in classification)
+  - `temperature`: 0.0 (for deterministic JSON outputs in validation/extraction)
+  - `temperature`: 0.1 (for slight creativity in generation tasks)
   - `temperature`: 0.5 (for query enhancement creativity)
-  - `num_predict`: 500 (general tasks), 200 (URL validation), 150 (query enhancement)
-- **Usage**: Query generation, URL geographic validation, and product page classification
+  - `format`: "json" (for all structured outputs)
+- **Usage**: Query generation, validation, URL geographic validation, product page classification, and price extraction
 
 ### 5.3 Data Models
 
@@ -431,6 +486,13 @@ BRAVE_SEARCH_API_KEY=your_api_key_here
 - **Metrics**: Response times, error rates, throughput
 
 ### 6.4 Performance Considerations
+
+#### URL Pre-filtering Performance
+- **3-Stage Pipeline**: Optimized filtering reduces processing overhead by 50-90%
+- **Pattern-based Stage**: Fast regex filtering excludes obvious non-product URLs
+- **Domain Rate Limiting**: Prevents over-representation with configurable thresholds
+- **LLM Bulk Processing**: Efficient batch classification for large URL sets (20+ threshold)
+- **Graceful Fallbacks**: System continues if any stage fails
 
 #### URL Validation Performance
 - **Batch Processing**: Validates URLs in efficient batches to minimize latency

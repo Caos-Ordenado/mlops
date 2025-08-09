@@ -34,7 +34,7 @@ class ProductSearchAgent:
         self.query_generator = QueryGeneratorAgent()
         self.search_agent = SearchAgent()
         self.query_validator = QueryValidatorAgent()
-        self.url_extractor = UrlExtractorAgent()
+        self.url_extractor = UrlExtractorAgent(llm_threshold=20)  # Enhanced with pre-filtering
         self.page_identifier = ProductPageCandidateIdentifierAgent() # Assuming no crawler tool passed now
         self.price_extractor = PriceExtractorAgent()
         self.category_expander = CategoryExpansionAgent()
@@ -151,7 +151,7 @@ class ProductSearchAgent:
         brave_search_results_internal = await self.search_agent.aggregate_search(valid_queries)
         
         if self.url_extractor:
-            extracted_candidates_list = self.url_extractor.extract_product_url_info(brave_search_results_internal)
+            extracted_candidates_list = await self.url_extractor.extract_product_url_info(brave_search_results_internal)
         else:
             logger.error("self.url_extractor is None at the time of calling extract_product_url_info.")
             extracted_candidates_list = []

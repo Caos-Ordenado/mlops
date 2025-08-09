@@ -36,10 +36,12 @@ The workflow includes a dedicated validation phase to ensure geographic relevanc
 
 This phase ensures that downstream processing focuses only on geographically relevant results, improving overall accuracy and efficiency.
 
-### Phase 3: URL Extraction and Filtering
-- Extracts unique URLs from validated search results
-- Removes duplicates and invalid URLs
-- Triggers proactive web crawling
+### Phase 3: URL Extraction and Pre-filtering
+- **3-Stage Pre-filtering Pipeline**: Pattern-based filtering → Advanced duplicate detection → LLM bulk classification
+- **Pattern Filtering**: Excludes navigation, auth, and non-product URLs using 22+ exclusion patterns
+- **Domain Rate Limiting**: Max 8 URLs per domain to prevent over-representation
+- **Performance**: 50-90% URL reduction before expensive downstream processing
+- Triggers proactive web crawling for filtered results
 
 ### Phase 4: Proactive Web Crawling
 - Initiates asynchronous crawling via Web Crawler Service
@@ -247,15 +249,15 @@ BRAVE_SEARCH_API_KEY=your_api_key_here
 
 For detailed technical specifications, see [PRD.md](PRD.md). 
 
-## Model Defaults (LLM)
+## Current LLM Model Configuration
 
-- Query Generation: `qwen2.5:7b` (temperature 0.0, JSON format)
-- Query Validation: `qwen2.5:7b` (temperature 0.0, JSON format)
-- Product Page Classification: `qwen3:latest` (JSON format). Fallback: `qwen2.5:7b`.
-- Geo URL Validation: default client `qwen2.5:7b` (JSON format)
-- Price Extraction: `qwen2.5:7b` (JSON format). Fallback: `gpt-oss:20b` when needed.
+- **Query Generation**: `qwen3:latest` (temperature 0.0, JSON format)
+- **Query Validation**: `qwen2.5:7b` (temperature 0.0, JSON format)
+- **Product Page Classification**: `qwen3:latest` (temperature 0.1, JSON format)
+- **Geographic URL Validation**: `qwen3:latest` primary, `phi3:latest` fallback (temperature 0.0/0.5, JSON format)
+- **Price Extraction**: `qwen2.5:7b` (temperature 0.0, JSON format)
 
-All LLM calls request strict JSON via `format:"json"` where supported.
+All LLM calls use strict JSON output via `format="json"` for reliable structured responses.
 
 ## Dependencies
-- **Ollama Integration**: LLM services (qwen2.5:7b, qwen3:latest, gpt-oss:20b)
+- **Ollama Integration**: LLM services (qwen3:latest, qwen2.5:7b, phi3:latest)

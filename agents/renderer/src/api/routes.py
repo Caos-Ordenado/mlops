@@ -41,6 +41,15 @@ async def _race_waits(page, selector: str, timeout_ms: int) -> None:
         return
 
 
+async def _close_context_safely(context) -> None:
+    t0 = time.perf_counter()
+    try:
+        await context.close()
+        logger.debug(f"render-html:context closed ms={(time.perf_counter()-t0)*1000:.1f}")
+    except Exception as e:
+        logger.debug(f"render-html:context close error={e}")
+
+
 @router.get("/health")
 async def health(request: Request):
     return {
@@ -242,33 +251,108 @@ async def render_html(req: RendererScreenshotRequest, request: Request):
         raise HTTPException(status_code=500, detail="Playwright not available in this container")
     if not getattr(request.app.state, "browser", None):
         raise HTTPException(status_code=503, detail="Browser not initialized")
-    started = time.time()
+    started = time.perf_counter()
     context = None
     try:
+        logger.debug(
+            f"render-html:start url={req.url} vw={req.viewport_width} vh={req.viewport_height} "
+            f"timeout_ms={req.timeout_ms} wait_until={req.wait_until}"
+        )
         browser = request.app.state.browser
+        t0 = time.perf_counter()
         context = await browser.new_context(viewport={"width": req.viewport_width, "height": req.viewport_height})
+        logger.debug(f"render-html:ctx new_context ms={(time.perf_counter()-t0)*1000:.1f}")
         page = await context.new_page()
         try:
             page.set_default_navigation_timeout(req.timeout_ms)
             page.set_default_timeout(req.timeout_ms)
         except Exception:
             pass
+
+        # Speed up by aborting heavy resources we don't need for HTML/text
+        abort_counts = {"image": 0, "font": 0}
+        async def _route_handler(route, _request):
+            url = _request.url.lower()
+            if _request.resource_type in ("image", "font") or any(url.endswith(ext) for ext in (".woff", ".woff2", ".ttf", ".otf")):
+                if _request.resource_type in abort_counts:
+                    abort_counts[_request.resource_type] += 1
+                return await route.abort()
+            return await route.continue_()
         try:
-            await page.goto(str(req.url), wait_until=req.wait_until, timeout=max(1000, min(req.timeout_ms, 5000)))
+            await context.route("**/*", _route_handler)
         except Exception:
             pass
-        await _race_waits(page, req.wait_for_selector, req.timeout_ms)
-        html = await page.content()
-        text = await page.evaluate("document.body.innerText")
-        await context.close()
+
+        # Fast navigation strategy: go to DOMContentLoaded quickly; avoid long networkidle waits
+        # Hard deadline: never exceed timeout_ms overall
+        deadline = started + (req.timeout_ms / 1000.0)
+        def remaining_ms(min_ms: int = 200, cap_ms: Optional[int] = None) -> int:
+            rem = int((deadline - time.perf_counter()) * 1000)
+            if cap_ms is not None:
+                rem = min(rem, cap_ms)
+            return max(min_ms, rem)
+
+        t_nav = time.perf_counter()
+        try:
+            await page.goto(str(req.url), wait_until="domcontentloaded", timeout=remaining_ms(cap_ms=2000))
+            logger.debug(f"render-html:goto domcontentloaded ms={(time.perf_counter()-t_nav)*1000:.1f}")
+        except Exception as e:
+            logger.debug(f"render-html:goto domcontentloaded error={e}")
+            # Fall back to a quick 'load' state navigation to avoid long stalls
+            try:
+                t_nav2 = time.perf_counter()
+                await page.goto(str(req.url), wait_until="load", timeout=remaining_ms(cap_ms=1500))
+                logger.debug(f"render-html:goto load fallback ms={(time.perf_counter()-t_nav2)*1000:.1f}")
+            except Exception as e2:
+                logger.debug(f"render-html:goto load fallback error={e2}")
+
+        # Attempt to stabilize page state before reading content
+        t_wait = time.perf_counter()
+        await _race_waits(page, req.wait_for_selector, remaining_ms(cap_ms=2000))
+        logger.debug(f"render-html:wait_for_selector '{req.wait_for_selector}' ms={(time.perf_counter()-t_wait)*1000:.1f}")
+        # Brief DOM settle only; skip networkidle to avoid slow pages
+        try:
+            t_dom = time.perf_counter()
+            await page.wait_for_load_state("domcontentloaded", timeout=remaining_ms(cap_ms=1500))
+            logger.debug(f"render-html:load_state domcontentloaded ms={(time.perf_counter()-t_dom)*1000:.1f}")
+        except Exception as e:
+            logger.debug(f"render-html:load_state domcontentloaded error={e}")
+
+        # Retry reading content if the page is still navigating
+        html = None
+        text = None
+        last_err = None
+        for i in range(2):
+            t_read = time.perf_counter()
+            try:
+                # outerHTML can be marginally faster than page.content on some pages
+                html = await page.evaluate("document.documentElement ? document.documentElement.outerHTML : ''")
+                text = await page.evaluate("document.body ? document.body.innerText : ''")
+                logger.debug(f"render-html:read_content attempt={i+1} ms={(time.perf_counter()-t_read)*1000:.1f}")
+                break
+            except Exception as e:
+                last_err = e
+                # Sleep but respect overall deadline
+                sleep_ms = min(150, remaining_ms())
+                await asyncio.sleep(sleep_ms / 1000.0)
+
+        if html is None:
+            raise last_err or Exception("Failed to retrieve page content")
+
+        total_ms = (time.perf_counter()-started)*1000
+        logger.debug(
+            f"render-html: ok url={req.url} total_ms={total_ms:.1f} aborted_images={abort_counts['image']} "
+            f"aborted_fonts={abort_counts['font']}"
+        )
+        await _close_context_safely(context)
         return {"url": str(req.url), "html": html, "text": text}
     except Exception as e:
         try:
             if context:
-                await context.close()
+                await _close_context_safely(context)
         except Exception:
             pass
-        elapsed_ms = int((time.time() - started) * 1000)
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
         msg = str(e)
         status = 504 if "Timeout" in msg else 500
         logger.error(f"render-html error: {e}")

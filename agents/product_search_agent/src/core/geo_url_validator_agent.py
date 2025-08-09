@@ -526,7 +526,9 @@ Respond with ONLY a JSON array of enhanced queries, like: ["enhanced query 1", "
 TASK: Return ONLY URLs from {location_context} domains that serve local customers.
 
 RESPONSE FORMAT: Valid JSON array only. No explanations, no markdown, no additional text.
-Example: ["url1", "url2"] or []
+- If URLs match criteria: ["url1", "url2"]
+- If NO URLs match criteria: []
+- NEVER return error messages or explanations
 
 STRICT CRITERIA - INCLUDE ONLY if domain meets ONE of these:
 1. Ends with .{self.country.lower()} (like example.{self.country.lower()})
@@ -540,7 +542,7 @@ EXCLUDE ALL:
 
 EXAMPLES TO EXCLUDE: amazon.com, semillabreadshop.com, plazavea.com.pe, mercadolibre.com.ar
 
-Return ONLY the JSON array."""
+Return ONLY the JSON array. If no URLs qualify, return []."""
 
         user_prompt = f"""Search Query: "{search_query}"
 
@@ -550,6 +552,10 @@ URLs to classify for {location_context}:
 Return only the JSON array of URLs that serve {location_context}:"""
 
         try:
+            # Debug log the prompts being sent to LLM
+            self.logger.debug(f"LLM validation system prompt: {system_prompt}")
+            self.logger.debug(f"LLM validation user prompt: {user_prompt}")
+            
             async with self.llm_client as llm:
                 response = await llm.generate(
                     prompt=user_prompt,
@@ -579,6 +585,16 @@ Return only the JSON array of URLs that serve {location_context}:"""
                     if response_text.endswith('```'):
                         response_text = response_text[:-3].strip()
 
+                # Check if LLM returned an error object instead of array
+                if response_text.startswith('{') and '"error"' in response_text:
+                    try:
+                        error_obj = json.loads(response_text)
+                        if isinstance(error_obj, dict) and "error" in error_obj:
+                            self.logger.warning(f"LLM returned error object: {error_obj['error']}. Treating as empty result.")
+                            return []
+                    except json.JSONDecodeError:
+                        pass
+                
                 # Extract first JSON array between [ and ]
                 start_idx = response_text.find('[')
                 end_idx = response_text.rfind(']')
