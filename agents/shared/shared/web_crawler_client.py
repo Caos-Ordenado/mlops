@@ -162,19 +162,13 @@ class WebCrawlerClient:
     async def crawl_single(
         self,
         url: str,
-        respect_robots: Optional[bool] = None,
-        timeout: Optional[int] = None,
-        extract_links: Optional[bool] = None,
-        bypass_cache: Optional[bool] = None
+        timeout: Optional[int] = None
     ) -> SingleCrawlResponse:
         """Crawl a single URL for detailed content extraction.
         
         Args:
             url: URL to crawl
-            respect_robots: Whether to respect robots.txt rules
             timeout: Timeout in milliseconds for the request
-            extract_links: Whether to extract links from the page
-            bypass_cache: Whether to bypass cache and force fresh crawl
             
         Returns:
             SingleCrawlResponse: The crawl result for the single URL
@@ -184,10 +178,7 @@ class WebCrawlerClient:
         """
         request = SingleCrawlRequest(
             url=url,
-            respect_robots=respect_robots if respect_robots is not None else False,
-            timeout=timeout if timeout is not None else 180000,
-            extract_links=extract_links if extract_links is not None else True,
-            bypass_cache=bypass_cache if bypass_cache is not None else False
+            timeout=timeout if timeout is not None else 180000
         )
         
         crawl_url = f"{self.base_url}/crawl-single"

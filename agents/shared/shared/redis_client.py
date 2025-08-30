@@ -3,6 +3,7 @@ Redis client for agent utilities.
 """
 
 import os
+import asyncio
 from typing import Optional, Any, Dict
 import json
 import aioredis
@@ -50,12 +51,27 @@ class RedisClient:
             redis_url = f"redis://{self.host}:{self.port}/{self.db}"
             logger.debug(f"Connecting to Redis at {self.host}:{self.port}/{self.db}")
             
-            self.client = await aioredis.from_url(
-                redis_url,
-                password=self.password,
-                decode_responses=self.decode_responses,
-                **self.kwargs
-            )
+            # Add retry logic for concurrent connection race conditions
+            max_retries = 3
+            retry_delay = 0.1  # 100ms
+            
+            for attempt in range(max_retries):
+                try:
+                    self.client = await aioredis.from_url(
+                        redis_url,
+                        password=self.password,
+                        decode_responses=self.decode_responses,
+                        **self.kwargs
+                    )
+                    break  # Success!
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Redis connection attempt {attempt + 1} failed: {e}. Retrying in {retry_delay}s...")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        logger.error(f"Redis connection failed after {max_retries} attempts: {e}")
+                        raise
             
         return self
         

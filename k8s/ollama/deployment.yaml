@@ -5,6 +5,8 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  strategy:
+    type: Recreate  # Ensure only one pod exists at a time
   selector:
     matchLabels:
       app: ollama

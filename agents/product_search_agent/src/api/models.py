@@ -2,7 +2,16 @@ from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, Field
 
 class ProductSearchRequest(BaseModel):
-    product: str = Field(..., description="Product to search for", example="laptop")
+    query: str = Field(..., description="Product to search for", example="laptop")
+    country: str = Field("UY", description="Country code for geographic URL validation")
+    city: Optional[str] = Field(None, description="Optional city name for more specific validation")
+    max_queries: Optional[int] = Field(5, description="Maximum number of search queries to generate")
+    
+    # Legacy support
+    @property
+    def product(self) -> str:
+        """Legacy property for backward compatibility."""
+        return self.query
 
 class BraveApiHit(BaseModel):
     title: Optional[str] = None
@@ -16,9 +25,18 @@ class BraveSearchResult(BaseModel):
 
 class ExtractedUrlInfo(BaseModel):
     url: str
-    title: Optional[str] = None
-    snippet: Optional[str] = None
+    original_title: Optional[str] = None
+    original_snippet: Optional[str] = None
     source_query: str # The original search query that led to this URL
+    
+    # Legacy compatibility
+    @property
+    def title(self) -> Optional[str]:
+        return self.original_title
+    
+    @property  
+    def snippet(self) -> Optional[str]:
+        return self.original_snippet
 
 class IdentifiedPageCandidate(BaseModel):
     url: str
@@ -73,4 +91,30 @@ class ProductSearchResponse(BaseModel):
     extracted_product_candidates: Optional[List[ExtractedUrlInfo]] = None
     identified_page_candidates: Optional[List[IdentifiedPageCandidate]] = None
     extracted_prices: Optional[List[ProductWithPrice]] = None  # 🆕 NEW: Price extraction results
-    validation_attempts: int = 0 
+    validation_attempts: int = 0
+
+class PipelineSearchRequest(BaseModel):
+    """Request model for pipeline-based product search."""
+    query: str = Field(..., description="Product to search for", example="laptop")
+    country: str = Field("UY", description="Country code for geographic URL validation")
+    city: Optional[str] = Field(None, description="Optional city name for more specific validation")
+    max_queries: Optional[int] = Field(5, description="Maximum number of search queries to generate")
+
+class PipelineSearchResponse(BaseModel):
+    """Response model for pipeline-based product search."""
+    success: bool
+    query: str
+    products: List[ProductWithPrice]
+    processing_time: float
+    pipeline_used: bool = True
+
+class MultiplePipelineSearchRequest(BaseModel):
+    """Request model for multiple concurrent searches."""
+    searches: List[PipelineSearchRequest] = Field(..., description="List of search requests to process concurrently")
+
+class MultiplePipelineSearchResponse(BaseModel):
+    """Response model for multiple concurrent searches."""
+    success: bool
+    results: List[PipelineSearchResponse]
+    total_processing_time: float
+    pipeline_metrics: Optional[Dict[str, Any]] = None 

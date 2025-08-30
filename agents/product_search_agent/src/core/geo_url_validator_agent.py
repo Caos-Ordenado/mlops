@@ -553,8 +553,8 @@ Return only the JSON array of URLs that serve {location_context}:"""
 
         try:
             # Debug log the prompts being sent to LLM
-            self.logger.debug(f"LLM validation system prompt: {system_prompt}")
-            self.logger.debug(f"LLM validation user prompt: {user_prompt}")
+            # self.logger.debug(f"LLM validation system prompt: {system_prompt}")
+            # self.logger.debug(f"LLM validation user prompt: {user_prompt}")
             
             async with self.llm_client as llm:
                 response = await llm.generate(

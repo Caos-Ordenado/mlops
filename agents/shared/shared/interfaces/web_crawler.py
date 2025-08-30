@@ -35,10 +35,7 @@ class CrawlResponse(BaseModel):
 
 class SingleCrawlRequest(BaseModel):
     url: str = Field(..., description="URL to crawl")
-    respect_robots: Optional[bool] = Field(default=False)
     timeout: Optional[int] = Field(default=180000, gt=0)
-    extract_links: Optional[bool] = Field(default=True)
-    bypass_cache: Optional[bool] = Field(default=False)
 
     @validator('url')
     def validate_url(cls, v):

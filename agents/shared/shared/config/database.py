@@ -2,45 +2,46 @@
 Database configuration settings.
 """
 
+import os
 from typing import Optional
 from pydantic import BaseModel, Field
 
 class DatabaseConfig(BaseModel):
     """Database configuration settings."""
     postgres_host: str = Field(
-        default="home.server",
+        default_factory=lambda: os.getenv("POSTGRES_HOST", "home.server"),
         description="PostgreSQL host"
     )
     postgres_port: int = Field(
-        default=5432,
+        default_factory=lambda: int(os.getenv("POSTGRES_PORT", "5432")),
         description="PostgreSQL port"
     )
     postgres_db: str = Field(
-        default="web_crawler",
+        default_factory=lambda: os.getenv("POSTGRES_DB", "web_crawler"),
         description="PostgreSQL database name"
     )
     postgres_user: str = Field(
-        default="admin",
+        default_factory=lambda: os.getenv("POSTGRES_USER", "admin"),
         description="PostgreSQL user"
     )
     postgres_password: Optional[str] = Field(
-        default=None,
+        default_factory=lambda: os.getenv("POSTGRES_PASSWORD"),
         description="PostgreSQL password"
     )
     redis_host: str = Field(
-        default="home.server",
+        default_factory=lambda: os.getenv("REDIS_HOST", "home.server"),
         description="Redis host"
     )
     redis_port: int = Field(
-        default=6379,
+        default_factory=lambda: int(os.getenv("REDIS_PORT", "6379")),
         description="Redis port"
     )
     redis_db: int = Field(
-        default=0,
+        default_factory=lambda: int(os.getenv("REDIS_DB", "0")),
         description="Redis database number"
     )
     redis_password: Optional[str] = Field(
-        default=None,
+        default_factory=lambda: os.getenv("REDIS_PASSWORD"),
         description="Redis password"
     )
     echo_sql: bool = Field(

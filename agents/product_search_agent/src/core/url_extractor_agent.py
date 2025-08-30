@@ -122,7 +122,7 @@ class UrlExtractorAgent:
             domain_count = seen_domains.get(domain, 0)
             
             # Limit URLs per domain to prevent spam
-            MAX_URLS_PER_DOMAIN = 8
+            MAX_URLS_PER_DOMAIN = 10
             if domain_count >= MAX_URLS_PER_DOMAIN:
                 logger.debug(f"Domain limit reached for {domain}: {url_info.url}")
                 continue

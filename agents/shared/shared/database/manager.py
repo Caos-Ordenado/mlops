@@ -2,6 +2,7 @@
 Database manager for handling database connections and sessions.
 """
 
+import asyncio
 from typing import Optional, Type, TypeVar, Any
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
@@ -61,13 +62,45 @@ class DatabaseManager:
                 expire_on_commit=False
             )
             
-            # Initialize Redis client and establish connection
+            # Initialize Redis client and establish connection with retry logic
             self.redis_client = redis_client or RedisClient()
-            await self.redis_client.__aenter__()  # Establish Redis connection
             
-            # Test the PostgreSQL connection
-            async with self.engine.begin() as conn:
-                await conn.run_sync(lambda _: None)
+            # Retry Redis connection to handle concurrent connection race conditions
+            max_retries = 3
+            retry_delay = 0.1
+            redis_connected = False
+            
+            for attempt in range(max_retries):
+                try:
+                    await self.redis_client.__aenter__()  # Establish Redis connection
+                    redis_connected = True
+                    break
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Redis connection attempt {attempt + 1} failed: {e}. Retrying in {retry_delay}s...")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        logger.error(f"Redis connection failed after {max_retries} attempts: {e}")
+                        raise
+            
+            # Test the PostgreSQL connection with retry logic
+            max_pg_retries = 3
+            pg_retry_delay = 0.1
+            
+            for attempt in range(max_pg_retries):
+                try:
+                    async with self.engine.begin() as conn:
+                        await conn.run_sync(lambda _: None)
+                    break  # Success!
+                except Exception as e:
+                    if attempt < max_pg_retries - 1:
+                        logger.warning(f"PostgreSQL connection attempt {attempt + 1} failed: {e}. Retrying in {pg_retry_delay}s...")
+                        await asyncio.sleep(pg_retry_delay)
+                        pg_retry_delay *= 2  # Exponential backoff
+                    else:
+                        logger.error(f"PostgreSQL connection failed after {max_pg_retries} attempts: {e}")
+                        raise
                 
             # Test Redis connection
             if not await self.redis_client.health_check():

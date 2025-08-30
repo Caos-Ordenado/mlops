@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
-from typing import Optional, Tuple
 import asyncio
 import time
 import os
 import json
-import hashlib
 
 from shared.interfaces.web_crawler import (
     CrawlRequest,
@@ -22,34 +20,6 @@ from ..core import WebCrawlerAgent, CrawlerSettings
 
 router = APIRouter()
 logger = setup_logger("web_crawler.api.routes")
-
-
-class TimedCache:
-    def __init__(self, ttl: int = 300):
-        self.cache = {}
-        self.ttl = ttl
-
-    def _generate_key(self, url: str, extract_links: bool = True) -> str:
-        key_data = f"{url}:{extract_links}"
-        return hashlib.md5(key_data.encode()).hexdigest()
-
-    def get(self, url: str, extract_links: bool = True) -> Optional[Tuple[dict, float]]:
-        key = self._generate_key(url, extract_links)
-        if key in self.cache:
-            result, timestamp, elapsed_time = self.cache[key]
-            if time.time() - timestamp < self.ttl:
-                return result, elapsed_time
-            else:
-                del self.cache[key]
-        return None
-
-    def set(self, url: str, result: dict, elapsed_time: float, extract_links: bool = True):
-        key = self._generate_key(url, extract_links)
-        self.cache[key] = (result, time.time(), elapsed_time)
-
-
-# Cache (db_context is held on app.state)
-url_cache = TimedCache(ttl=int(os.getenv("CRAWLER_CACHE_TTL", "300")))
 
 
 @router.post("/crawl", response_model=CrawlResponse)
@@ -99,17 +69,11 @@ async def crawl_single(request: SingleCrawlRequest, http_req: Request) -> Single
     start_time = time.time()
     db_context = getattr(http_req.app.state, "db_context", None)
 
-    if not request.bypass_cache:
-        cached_result = url_cache.get(request.url, request.extract_links)
-        if cached_result:
-            result, cached_elapsed_time = cached_result
-            return SingleCrawlResponse(success=True, result=CrawlResult(**result), elapsed_time=cached_elapsed_time)
-
     try:
         settings = CrawlerSettings(
             max_pages=1,
             max_depth=1,
-            respect_robots=request.respect_robots,
+            respect_robots=False,  # Always false for single crawl
             timeout=min(request.timeout, 30000),
             max_total_time=min(300, request.timeout // 1000 + 60),
             max_concurrent_pages=1,
@@ -134,8 +98,6 @@ async def crawl_single(request: SingleCrawlRequest, http_req: Request) -> Single
         elapsed_time = time.time() - start_time
 
         if result:
-            if not request.bypass_cache:
-                url_cache.set(request.url, result, elapsed_time, request.extract_links)
             return SingleCrawlResponse(success=True, result=CrawlResult(**result), elapsed_time=elapsed_time)
         else:
             return SingleCrawlResponse(success=False, result=None, elapsed_time=elapsed_time, error="No content could be extracted from the URL")

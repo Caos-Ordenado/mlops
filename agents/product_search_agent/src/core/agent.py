@@ -221,7 +221,9 @@ class ProductSearchAgent:
 
             category_urls = [c.url for c in identified_page_candidates_list if getattr(c, 'page_type', None) == 'CATEGORY']
             if category_urls:
-                expanded = await self.category_expander.expand(category_urls)
+                # Use the original product search query for dynamic filtering
+                query_terms = product.split() if product else None
+                expanded = await self.category_expander.expand(category_urls, query_terms)
                 if expanded:
                     try:
                         search_query = valid_queries[0] if valid_queries else product

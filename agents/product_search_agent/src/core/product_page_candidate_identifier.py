@@ -256,7 +256,7 @@ Remember: Do NOT include any comments, explanations, or text outside or inside t
         self, 
         extracted_urls: List[ExtractedUrlInfo], 
         product_name: str,
-        batch_size: int = 2,
+        batch_size: int = 5,
         delay_between_batches: float = 0.01 # seconds
     ) -> List[IdentifiedPageCandidate]:
         identified_candidates: List[IdentifiedPageCandidate] = []

@@ -5,13 +5,14 @@ from shared.logging import setup_logger
 from shared.ollama_client import OllamaClient
 from shared.web_crawler_client import WebCrawlerClient
 from src.api.models import IdentifiedPageCandidate, ProductWithPrice, PriceExtractionResult
+from .batch_content_retriever import BatchContentRetriever
 
 logger = setup_logger("price_extractor_agent")
 
 class PriceExtractorAgent:
     def __init__(self, model_name: str = "qwen2.5:7b", temperature: float = 0.0):
         """
-        Initialize PriceExtractorAgent with LLM-based price extraction.
+        Initialize PriceExtractorAgent with LLM-based price extraction and batch content retrieval.
         
         Args:
             model_name: Ollama model to use for price extraction
@@ -19,7 +20,8 @@ class PriceExtractorAgent:
         """
         self.model_name = model_name
         self.temperature = temperature
-        logger.info(f"PriceExtractorAgent initialized with model: {model_name}, temp: {temperature}")
+        self.batch_retriever = BatchContentRetriever()
+        logger.info(f"PriceExtractorAgent initialized with model: {model_name}, temp: {temperature}, batch retrieval enabled")
 
     async def __aenter__(self):
         logger.debug("Entering PriceExtractorAgent context")
@@ -54,12 +56,23 @@ class PriceExtractorAgent:
         
         extracted_products = []
         
+        # 🚀 OPTIMIZATION: Batch retrieve all page content at once
+        urls_to_crawl = [page.url for page in product_pages]
+        logger.info(f"Batch retrieving content for {len(urls_to_crawl)} product pages")
+        
+        page_contents = await self.batch_retriever.get_contents_batch(urls_to_crawl)
+        
+        # Log cache performance
+        stats = self.batch_retriever.get_stats()
+        logger.info(f"Batch retrieval stats: {stats['cache_hit_rate_percent']:.1f}% cache hit rate, "
+                   f"{stats['memory_hits']} memory + {stats['redis_hits']} redis + {stats['database_hits']} db hits")
+        
         for page in product_pages:
             try:
                 logger.debug(f"Extracting price for: {page.url}")
                 
-                # Get fresh page content using crawl-single
-                page_content = await self._get_page_content(page.url)
+                # Get content from batch results
+                page_content = page_contents.get(page.url)
                 if not page_content:
                     logger.warning(f"Could not retrieve content for {page.url} - skipping price extraction")
                     # Add failed extraction result for tracking but continue processing other pages
@@ -70,7 +83,7 @@ class PriceExtractorAgent:
                         source_query=page.source_query,
                         price_extraction=PriceExtractionResult(
                             success=False,
-                            error="Failed to crawl page content (404 or network error)"
+                            error="Failed to retrieve page content from batch"
                         )
                     ))
                     continue
@@ -186,7 +199,6 @@ class PriceExtractorAgent:
             async with WebCrawlerClient() as client:
                 response = await client.crawl_single(
                     url=url,
-                    extract_links=False,  # We only need content, not links
                     timeout=30000  # 30 second timeout
                 )
                 
