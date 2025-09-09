@@ -81,12 +81,6 @@ replace_placeholders() {
                 echo
                 echo -e "${GREEN}Password set for PostgreSQL${NC}"
                 ;;
-            "__PORTAINER_ADMIN_PASSWORD_BCRYPT__")
-                read -s -p "Enter Portainer admin password: " password
-                echo
-                value=$(generate_bcrypt_hash "$password")
-                echo -e "${GREEN}Generated bcrypt for Portainer admin${NC}"
-                ;;
             "__GRAFANA_ADMIN_USER__")
                 read -p "Enter Grafana admin user [admin]: " value
                 value=${value:-admin}
@@ -95,7 +89,7 @@ replace_placeholders() {
                 read -s -p "Enter Grafana admin password: " value
                 echo
                 ;;
-            "__GRAFANA_SECRET_KEY__"|"__PORTAINER_ENCRYPTION_KEY__")
+            "__GRAFANA_SECRET_KEY__")
                 value=$(generate_random_string 48)
                 echo -e "${GREEN}Generated random key for $placeholder${NC}"
                 ;;
@@ -145,10 +139,6 @@ case "$output_file" in
   *grafana.yaml)
     echo -e "${GREEN}Applying $output_file to namespace 'observability'...${NC}"
     kubectl apply -f "$output_file" -n observability
-    ;;
-  *portainer.yaml)
-    echo -e "${GREEN}Applying $output_file to namespace 'portainer'...${NC}"
-    kubectl apply -f "$output_file" -n portainer
     ;;
 esac
 

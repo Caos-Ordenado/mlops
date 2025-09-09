@@ -15,31 +15,48 @@ alwaysApply: false
 - Host: home.server (internal-vpn-address)
 
 ## Namespaces and Services
-1. kube-system:
+1. **kube-system**: Core Kubernetes components
    - Traefik ingress controller
+   - Calico networking
 
-2. shared:
+2. **shared**: Shared infrastructure services
    - Redis service
    - PostgreSQL service
 
-3. argocd:
-   - ArgoCD deployment (v2.8.4)
+3. **observability**: Monitoring and logging stack
+   - Grafana (dashboards)
+   - Prometheus (metrics) 
+   - Loki (log storage)
+   - Promtail (log collection - 238 files across all namespaces)
+   - Dozzle (real-time log viewer) - http://home.server:30080/logs/
+   - Node Exporter (system metrics)
+   - Kube State Metrics (cluster metrics)
 
- 4. default:
-    - Ollama LLM service (http://home.server:30080/ollama)
-    - Web crawler service (http://home.server:30080/crawler)
-    - Renderer service (Playwright-as-a-Service) (http://home.server:30080/renderer)
+4. **default**: Application services
+   - Ollama LLM service (http://home.server:30080/ollama)
+   - Web crawler service (http://home.server:30080/crawler)
+   - Renderer service (Playwright-as-a-Service) (http://home.server:30080/renderer)
+
+5. **argocd**: GitOps deployment
+   - ArgoCD deployment (v2.8.4)
 
 ## Directory Structure
 ```
 k8s/
 ├── argocd/         # ArgoCD deployment
-├── ollama/         # Ollama service
+├── dozzle/         # Real-time log viewer
+├── grafana/        # Metrics & log dashboards
+├── kube-state-metrics/ # Cluster metrics
+├── loki/           # Log aggregation storage
+├── node-exporter/  # System metrics
+├── ollama/         # Ollama LLM service
+├── prometheus/     # Metrics collection & storage
+├── promtail/       # Log shipping agent
 ├── renderer/       # Playwright renderer service
 ├── secrets/        # Secret management
 ├── shared/         # Shared infrastructure
-├──── postgres/     # Postgres
-├──── redis/        # Redis
+├──── postgres/     # PostgreSQL database
+├──── redis/        # Redis cache
 ├── traefik/        # Ingress controller
 └── kustomization.yaml
 ``` 

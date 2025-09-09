@@ -1,0 +1,65 @@
+---
+description: Kubernetes observability stack for monitoring, logging, and metrics collection
+globs: k8s/observability/*, k8s/dozzle/*, k8s/grafana/*, k8s/loki/*, k8s/prometheus/*, k8s/promtail/*
+alwaysApply: false
+---
+
+# Observability Stack Architecture
+
+## **Components & Data Flow**
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   ALL PODS  │ => │  PROMTAIL   │ => │    LOKI     │ => │   GRAFANA   │
+│             │    │ (Log Agent) │    │ (Log Store) │    │ (Dashboard) │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                                                              ^
+      ┌─────────────┐    ┌─────────────┐                      │
+      │    NODES    │ => │ PROMETHEUS  │ => ══════════════════┘
+      │ (Metrics)   │    │ (TS Store)  │
+      └─────────────┘    └─────────────┘
+                            ^
+                    ┌─────────────┐
+                    │  EXPORTERS  │
+                    │ (Collectors)│
+                    └─────────────┘
+```
+
+## **Service Endpoints**
+- **Dozzle**: http://home.server:30080/logs/ (real-time log viewer)
+- **Grafana**: Internal dashboards for metrics & logs
+- **Prometheus**: Metrics collection & alerting
+- **Loki**: Log aggregation & storage
+
+## **Log Collection (Promtail)**
+- **Coverage**: All namespaces (kube-system: 163, shared: 42, observability: 13, default: 5)
+- **Method**: Static configuration with wildcards (`*.log`)
+- **Processing**: CRI format parsing, metadata enrichment
+- **Destination**: Loki via HTTP push
+
+## **Metrics Collection (Prometheus)**
+- **Node Exporter**: System metrics (CPU, memory, disk, network)
+- **Kube State Metrics**: Kubernetes object states and pod metrics
+- **Scraping**: Automatic service discovery
+- **Storage**: Time-series database
+
+## **Key Features**
+- ✅ **Comprehensive Coverage**: Logs from all 235 containers
+- ✅ **Real-time Viewing**: Dozzle for live log streaming
+- ✅ **Historical Analysis**: Grafana for log queries and dashboards
+- ✅ **High Performance**: Buffered processing, efficient storage
+- ✅ **Rich Metadata**: Namespace, pod, container labels for filtering
+
+## **Common Queries**
+```promql
+# LogQL examples for Grafana
+{namespace="observability"} |= "error"          # Errors in observability
+{namespace="default"} | json                    # Structured logs from default
+{container="nginx"} |~ "5[0-9][0-9]"          # HTTP 5xx errors
+{job="all-pods"} | logfmt | level="ERROR"      # All error-level logs
+```
+
+## **Deployment Pattern**
+- **DaemonSet**: Promtail runs on each node for log collection
+- **Deployment**: Single instances for Loki, Grafana, Prometheus
+- **Storage**: Persistent volumes for data retention
+- **Networking**: ClusterIP services with Traefik ingress

@@ -1,3 +1,4 @@
+# k8s/promtail/daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -5,12 +6,14 @@ metadata:
   namespace: observability
 spec:
   selector:
-    matchLabels: { name: promtail }
+    matchLabels:
+      name: promtail
   template:
     metadata:
-      labels: { name: promtail }
+      labels:
+        name: promtail
     spec:
-      serviceAccountName: promtail
+      serviceAccountName: promtail    # puedes reutilizar el SA/roles que ya creaste
       containers:
         - name: promtail
           image: grafana/promtail:2.9.8
@@ -23,14 +26,13 @@ spec:
               mountPath: /etc/promtail
             - name: positions
               mountPath: /run/promtail
-            # Runtimes k8s (containerd): /var/log/containers y /var/log/pods
+            # logs del host (ambos directorios son necesarios)
             - name: varlog
               mountPath: /var/log
               readOnly: true
             - name: podlogs
               mountPath: /var/log/pods
               readOnly: true
-            # (opcional) Docker clásico
             - name: docker
               mountPath: /var/lib/docker/containers
               readOnly: true
@@ -38,6 +40,9 @@ spec:
         - name: config
           configMap:
             name: promtail-config
+            items:
+              - key: promtail.yaml
+                path: promtail.yaml
         - name: positions
           emptyDir: {}
         - name: varlog

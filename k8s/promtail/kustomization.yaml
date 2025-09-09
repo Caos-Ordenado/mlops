@@ -4,4 +4,4 @@ namespace: observability
 resources:
   - rbac.yaml
   - configmap.yaml
-  - daemonset-v2.yaml
+  - daemonset.yaml
