@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portainer
+  namespace: portainer
+  labels:
+    app: portainer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portainer
+  template:
+    metadata:
+      labels:
+        app: portainer
+    spec:
+      containers:
+        - name: portainer
+          image: portainer/portainer-ce:latest
+          args:
+            - "--admin-password-file=/run/portainer-secret/admin-password"
+          ports:
+            - name: http
+              containerPort: 9000
+            - name: edge
+              containerPort: 8000
+            - name: https
+              containerPort: 9443
+          volumeMounts:
+            - name: portainer-secret
+              mountPath: /run/portainer-secret
+              readOnly: true
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: portainer-secret
+          secret:
+            secretName: portainer-secrets
+        - name: data
+          persistentVolumeClaim:
+            claimName: portainer-data

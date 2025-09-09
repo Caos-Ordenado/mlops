@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: observability
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 3101
+      log_level: debug
+
+    clients:
+      - url: http://loki.observability.svc.cluster.local:3100/loki/api/v1/push
+
+    positions:
+      filename: /run/promtail/positions.yaml
+
+    scrape_configs:
+      - job_name: kubernetes-pods
+        pipeline_stages:
+          - cri: {}          # parsea formato CRI (containerd/docker)
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          # labels útiles
+          - action: replace
+            source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            target_label: app_kubernetes_io_name
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_label_component]
+            target_label: component
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_label_tier]
+            target_label: tier
+
+          # Use /var/log/containers/ path - simple pod_namespace_*.log pattern
+          - action: replace
+            replacement: /var/log/containers/${1}_${2}_*.log
+            source_labels:
+              - __meta_kubernetes_pod_name
+              - __meta_kubernetes_namespace
+            target_label: __path__

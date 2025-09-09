@@ -81,6 +81,24 @@ replace_placeholders() {
                 echo
                 echo -e "${GREEN}Password set for PostgreSQL${NC}"
                 ;;
+            "__PORTAINER_ADMIN_PASSWORD_BCRYPT__")
+                read -s -p "Enter Portainer admin password: " password
+                echo
+                value=$(generate_bcrypt_hash "$password")
+                echo -e "${GREEN}Generated bcrypt for Portainer admin${NC}"
+                ;;
+            "__GRAFANA_ADMIN_USER__")
+                read -p "Enter Grafana admin user [admin]: " value
+                value=${value:-admin}
+                ;;
+            "__GRAFANA_ADMIN_PASSWORD__")
+                read -s -p "Enter Grafana admin password: " value
+                echo
+                ;;
+            "__GRAFANA_SECRET_KEY__"|"__PORTAINER_ENCRYPTION_KEY__")
+                value=$(generate_random_string 48)
+                echo -e "${GREEN}Generated random key for $placeholder${NC}"
+                ;;
             *)
                 read -p "Enter value for $placeholder: " value
                 ;;
@@ -110,6 +128,7 @@ echo -e "${GREEN}Generating ${output_file}${NC}"
 replace_placeholders "${TEMPLATE_DIR}/${template_file}" "$output_file"
 
 # Auto-apply logic
+# --- al final, en el auto-apply: añade estos casos ---
 case "$output_file" in
   *web-crawler.yaml)
     echo -e "${GREEN}Applying $output_file to namespace 'default'...${NC}"
@@ -117,12 +136,19 @@ case "$output_file" in
     ;;
   *postgres.yaml|*redis.yaml)
     echo -e "${GREEN}Applying $output_file to namespaces 'default' and 'shared'...${NC}"
-    kubectl apply -f "$output_file" -n default
     kubectl apply -f "$output_file" -n shared
     ;;
   *argocd.yaml)
     echo -e "${GREEN}Applying $output_file to namespace 'argocd'...${NC}"
     kubectl apply -f "$output_file" -n argocd
+    ;;
+  *grafana.yaml)
+    echo -e "${GREEN}Applying $output_file to namespace 'observability'...${NC}"
+    kubectl apply -f "$output_file" -n observability
+    ;;
+  *portainer.yaml)
+    echo -e "${GREEN}Applying $output_file to namespace 'portainer'...${NC}"
+    kubectl apply -f "$output_file" -n portainer
     ;;
 esac
 

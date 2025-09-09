@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dozzle
+  namespace: observability
+  labels: { app: dozzle }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: dozzle }
+  template:
+    metadata:
+      labels: { app: dozzle }
+    spec:
+      serviceAccountName: dozzle
+      containers:
+        - name: dozzle
+          image: ghcr.io/amir20/dozzle:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DOZZLE_MODE
+              value: "k8s"             # soporte k8s
+            - name: DOZZLE_ADDR
+              value: ":8080"
+            - name: DOZZLE_BASE
+              value: "/logs"   
+            # Opcional: restringir a ciertos namespaces
+            # - name: DOZZLE_NAMESPACES
+            #   value: "default,portainer"
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 200m, memory: 256Mi }

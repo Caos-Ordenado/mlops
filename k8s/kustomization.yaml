@@ -2,7 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - argocd
-  - web_crawler
+  # - argocd
+  - portainer
+  - dozzle
+  - loki
+  - promtail
+  - grafana
+  - node-exporter
+  - kube-state-metrics
+  - prometheus
   - shared
+  - web_crawler
   - renderer
