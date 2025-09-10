@@ -23,7 +23,7 @@ data:
             "name": "service",
             "type": "query",
             "datasource": {"type": "loki", "uid": "loki"},
-            "query": "label_values({job=\"static-containers\"}, filename)",
+            "query": "label_values({job=~\"applications|observability|infrastructure|traffic\"}, container)",
             "current": {"text": "All", "value": ""},
             "refresh": 2,
             "includeAll": true,
@@ -41,7 +41,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "count_over_time({job=\"static-containers\"} |= \"ERROR\" [5m])"
+              "expr": "count_over_time({job=~\"applications|observability|infrastructure\"} |= \"ERROR\" [5m])"
             }
           ],
           "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}

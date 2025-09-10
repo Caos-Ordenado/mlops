@@ -84,3 +84,7 @@ spec:
                   name: grafana-dashboard-k8s-logs
               - configMap:
                   name: grafana-dashboard-k8s-metrics
+              - configMap:
+                  name: grafana-dashboard-applications
+              - configMap:
+                  name: grafana-dashboard-traffic

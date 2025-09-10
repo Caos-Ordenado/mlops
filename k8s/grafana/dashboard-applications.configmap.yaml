@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-applications
+  namespace: observability
+  labels:
+    app: grafana
+    grafana_dashboard: "1"
+data:
+  applications.json: |
+    {
+      "id": null,
+      "uid": "applications-main",
+      "title": "Applications • Performance & Health",
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "30s",
+      "tags": ["applications", "performance", "home"],
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Ollama Requests (5m)",
+          "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count_over_time({job=\"applications\", container=\"ollama\"} |= \"GET\" [5m])"
+            }
+          ]
+        },
+        {
+          "type": "stat", 
+          "title": "Web Crawler Health Checks",
+          "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count_over_time({job=\"applications\", container=\"web-crawler\"} |= \"health\" [5m])"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Renderer Active Sessions", 
+          "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A", 
+              "expr": "count_over_time({job=\"applications\", container=\"renderer\"} |= \"HTTP\" [5m])"
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Application Errors",
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "{job=\"applications\"} |= \"error\" or \"ERROR\" or \"Exception\""
+            }
+          ]
+        }
+      ]
+    }

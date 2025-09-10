@@ -31,9 +31,15 @@ alwaysApply: false
 - **Loki**: Log aggregation & storage
 
 ## **Log Collection (Promtail)**
-- **Coverage**: All namespaces (kube-system: 163, shared: 42, observability: 13, default: 5)
-- **Method**: Static configuration with wildcards (`*.log`)
-- **Processing**: CRI format parsing, metadata enrichment
+- **Coverage**: Focused collection (~91 files total)
+  - **Applications**: Default namespace (6 files) - core services
+  - **Observability**: Monitoring stack (13 files) - metrics & logs
+  - **Infrastructure**: Shared services (42 files) - databases
+  - **Traffic**: Traefik ingress (5 files) - HTTP request logs
+  - **DNS**: CoreDNS logs (25 files) - connectivity troubleshooting
+  - **Excluded**: Other kube-system noise (~59 files eliminated)
+- **Method**: Static configuration with job-specific wildcards
+- **Processing**: CRI format parsing, metadata enrichment, job labeling
 - **Destination**: Loki via HTTP push
 
 ## **Metrics Collection (Prometheus)**
@@ -42,21 +48,42 @@ alwaysApply: false
 - **Scraping**: Automatic service discovery
 - **Storage**: Time-series database
 
+## **Resource Requirements**
+- **Loki**: 1Gi memory limit (optimized for 66 focused log files + traffic)
+- **Promtail**: DaemonSet with minimal resource usage
+- **Prometheus**: Standard metrics collection requirements
+- **Grafana**: Dashboard rendering and query processing
+
 ## **Key Features**
-- ✅ **Comprehensive Coverage**: Logs from all 235 containers
+- ✅ **Focused Coverage**: ~91 essential log files (39% reduction from 150)
+- ✅ **Traffic Monitoring**: HTTP request logs via Traefik ingress
+- ✅ **DNS Troubleshooting**: CoreDNS logs for connectivity issues
 - ✅ **Real-time Viewing**: Dozzle for live log streaming
-- ✅ **Historical Analysis**: Grafana for log queries and dashboards
-- ✅ **High Performance**: Buffered processing, efficient storage
-- ✅ **Rich Metadata**: Namespace, pod, container labels for filtering
+- ✅ **Historical Analysis**: Grafana dashboards (logs, metrics, applications, traffic)
+- ✅ **Traffic Analysis**: HTTP request patterns, error rates, endpoint usage
+- ✅ **Alerting**: Prometheus rules for critical conditions
+- ✅ **High Performance**: Optimized processing, efficient storage
+- ✅ **Rich Metadata**: Job-based labeling (applications, observability, infrastructure, traffic, dns)
 
 ## **Common Queries**
-```promql
-# LogQL examples for Grafana
-{namespace="observability"} |= "error"          # Errors in observability
-{namespace="default"} | json                    # Structured logs from default
-{container="nginx"} |~ "5[0-9][0-9]"          # HTTP 5xx errors
-{job="all-pods"} | logfmt | level="ERROR"      # All error-level logs
+```logql
+# LogQL examples for Grafana - Job-based filtering
+{job="applications"} |= "error"                # Errors in your applications
+{job="observability"} |= "error"              # Monitoring stack errors
+{job="infrastructure"} |= "error"             # Database/infrastructure errors
+{job="traffic"} |= "HTTP"                      # All HTTP requests via Traefik
+{job="traffic"} |~ "\"(GET|POST|PUT|DELETE)"   # HTTP method filtering
+{job="traffic"} |~ "\"[4-5][0-9][0-9]"        # HTTP 4xx/5xx error responses
+{job="dns"} |= "NXDOMAIN"                      # DNS resolution failures
+{job="dns"} |= "query"                         # All DNS queries
+{job="applications", container="ollama"} | json # Ollama structured logs
+{job="infrastructure", container="postgres"}   # Database logs only
 ```
+
+## **Enhancement Roadmap**
+- **Implemented**: Job-based collection, traffic monitoring, DNS troubleshooting, alerting rules, traffic analysis dashboard
+- **Next Priority**: Security monitoring, performance metrics, log-based alerting  
+- **Advanced**: Log-based metrics, JSON parsing, automated remediation
 
 ## **Deployment Pattern**
 - **DaemonSet**: Promtail runs on each node for log collection

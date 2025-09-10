@@ -16,19 +16,18 @@ data:
       filename: /run/promtail/positions.yaml
 
     scrape_configs:
-      # OPTION B: All namespaces using proven static approach
-      - job_name: all-pods-static
+      # OPTION 1: Focus on applications and observability (recommended)
+      - job_name: applications
         pipeline_stages:
           - cri: {}
         static_configs:
           - targets:
               - localhost
             labels:
-              job: all-pods
-              __path__: /var/log/containers/*.log
+              job: applications
+              __path__: /var/log/containers/*_default_*.log
               
-      # Keep observability-focused job for comparison  
-      - job_name: observability-pods
+      - job_name: observability
         pipeline_stages:
           - cri: {}
         static_configs:
@@ -37,3 +36,36 @@ data:
             labels:
               job: observability
               __path__: /var/log/containers/*_observability_*.log
+              
+      # Optional: Include shared services (databases)
+      - job_name: infrastructure
+        pipeline_stages:
+          - cri: {}
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: infrastructure
+              __path__: /var/log/containers/*_shared_*.log
+              
+      # Traffic logs: Traefik ingress requests
+      - job_name: traffic
+        pipeline_stages:
+          - cri: {}
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: traffic
+              __path__: /var/log/containers/*traefik*_kube-system_*.log
+              
+      # DNS logs: CoreDNS for connectivity troubleshooting
+      - job_name: dns
+        pipeline_stages:
+          - cri: {}
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: dns
+              __path__: /var/log/containers/*coredns*_kube-system_*.log

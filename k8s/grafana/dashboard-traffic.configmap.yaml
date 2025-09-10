@@ -1,0 +1,267 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-traffic
+  namespace: observability
+  labels:
+    app: grafana
+    grafana_dashboard: "1"
+data:
+  traffic.json: |
+    {
+      "id": null,
+      "uid": "traffic-analysis",
+      "title": "Traffic Analysis • HTTP Requests & Performance",
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "30s",
+      "tags": ["traffic", "http", "performance", "traefik", "home"],
+      "templating": {
+        "list": [
+          {
+            "name": "time_range",
+            "type": "interval",
+            "query": "5m,15m,30m,1h,6h,12h,1d",
+            "current": {"text": "15m", "value": "15m"},
+            "label": "Time Range"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Total Requests ($time_range)",
+          "gridPos": {"x": 0, "y": 0, "w": 3, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count_over_time({job=\"traffic\"} |~ \"\\\"(GET|POST|PUT|DELETE|PATCH)\" [$time_range])"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 100},
+                  {"color": "red", "value": 1000}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "stat",
+          "title": "Error Rate ($time_range)",
+          "gridPos": {"x": 3, "y": 0, "w": 3, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count_over_time({job=\"traffic\"} |~ \"\\\"[4-5][0-9][0-9]\" [$time_range])"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "steps": [
+                  {"color": "green", "value": null},
+                  {"color": "yellow", "value": 5},
+                  {"color": "red", "value": 20}
+                ]
+              },
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "type": "stat",
+          "title": "Unique Endpoints",
+          "gridPos": {"x": 6, "y": 0, "w": 3, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count by (path) (count_over_time({job=\"traffic\"} |~ \"\\\"(GET|POST)\" [$time_range]))"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Active IPs",
+          "gridPos": {"x": 9, "y": 0, "w": 3, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count by (client_ip) (count_over_time({job=\"traffic\"} |~ \"\\\"(GET|POST)\" [$time_range]))"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Request Rate (req/min)",
+          "gridPos": {"x": 0, "y": 4, "w": 6, "h": 6},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(count_over_time({job=\"traffic\"} |~ \"\\\"(GET|POST|PUT|DELETE)\" [1m]))"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "linear",
+                "pointSize": 3,
+                "fillOpacity": 20
+              }
+            }
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "HTTP Status Codes",
+          "gridPos": {"x": 6, "y": 4, "w": 6, "h": 6},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "2xx",
+              "expr": "rate(count_over_time({job=\"traffic\"} |~ \"\\\"2[0-9][0-9]\" [1m]))",
+              "legendFormat": "2xx Success"
+            },
+            {
+              "refId": "4xx",
+              "expr": "rate(count_over_time({job=\"traffic\"} |~ \"\\\"4[0-9][0-9]\" [1m]))",
+              "legendFormat": "4xx Client Error"
+            },
+            {
+              "refId": "5xx",
+              "expr": "rate(count_over_time({job=\"traffic\"} |~ \"\\\"5[0-9][0-9]\" [1m]))",
+              "legendFormat": "5xx Server Error"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "linear",
+                "pointSize": 3,
+                "fillOpacity": 30
+              }
+            }
+          }
+        },
+        {
+          "type": "barchart",
+          "title": "Top HTTP Methods",
+          "gridPos": {"x": 0, "y": 10, "w": 4, "h": 6},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "GET",
+              "expr": "count_over_time({job=\"traffic\"} |~ \"\\\"GET\" [$time_range])",
+              "legendFormat": "GET"
+            },
+            {
+              "refId": "POST",
+              "expr": "count_over_time({job=\"traffic\"} |~ \"\\\"POST\" [$time_range])",
+              "legendFormat": "POST"
+            },
+            {
+              "refId": "PUT",
+              "expr": "count_over_time({job=\"traffic\"} |~ \"\\\"PUT\" [$time_range])",
+              "legendFormat": "PUT"
+            },
+            {
+              "refId": "DELETE",
+              "expr": "count_over_time({job=\"traffic\"} |~ \"\\\"DELETE\" [$time_range])",
+              "legendFormat": "DELETE"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Top Endpoints by Request Count",
+          "gridPos": {"x": 4, "y": 10, "w": 4, "h": 6},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "topk(10, count_over_time({job=\"traffic\"} |~ \"/[a-zA-Z]\" [$time_range]))",
+              "format": "table"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Top Client IPs",
+          "gridPos": {"x": 8, "y": 10, "w": 4, "h": 6},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "topk(10, count_over_time({job=\"traffic\"} |~ \"[0-9]+\\\\.[0-9]+\\\\.[0-9]+\\\\.[0-9]+\" [$time_range]))",
+              "format": "table"
+            }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Recent Error Requests (4xx/5xx)",
+          "gridPos": {"x": 0, "y": 16, "w": 6, "h": 8},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "{job=\"traffic\"} |~ \"\\\"[4-5][0-9][0-9]\""
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "sortOrder": "Descending"
+          }
+        },
+        {
+          "type": "logs",
+          "title": "Recent Successful Requests (2xx/3xx)",
+          "gridPos": {"x": 6, "y": 16, "w": 6, "h": 8},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "{job=\"traffic\"} |~ \"\\\"[2-3][0-9][0-9]\""
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "showLabels": false,
+            "showCommonLabels": false,
+            "wrapLogMessage": false,
+            "sortOrder": "Descending"
+          }
+        },
+        {
+          "type": "heatmap",
+          "title": "Request Volume Heatmap (24h)",
+          "gridPos": {"x": 0, "y": 24, "w": 12, "h": 6},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "rate(count_over_time({job=\"traffic\"} |~ \"\\\"(GET|POST)\" [5m]))"
+            }
+          ]
+        }
+      ]
+    }

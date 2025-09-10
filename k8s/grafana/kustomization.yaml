@@ -10,3 +10,5 @@ resources:
   - dashboards-provider.configmap.yaml
   - dashboard-k8s-logs.configmap.yaml
   - dashboard-k8s-metrics.configmap.yaml
+  - dashboard-applications.configmap.yaml
+  - dashboard-traffic.configmap.yaml
