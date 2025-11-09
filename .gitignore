@@ -63,3 +63,6 @@ k8s/argocd-linux-amd64
 # Temporary files
 *.tmp
 *.temp
+
+# ArgoCD secrets (apply from k8s/secrets/generated/ instead)
+k8s/argocd/secrets.yaml

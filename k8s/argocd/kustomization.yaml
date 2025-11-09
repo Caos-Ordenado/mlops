@@ -7,7 +7,7 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - configmaps.yaml
-  - secrets.yaml
+  # secrets.yaml - Applied separately from k8s/secrets/generated/ (not in Git)
   - redis-secret.yaml
   - services.yaml
   - deployments.yaml
