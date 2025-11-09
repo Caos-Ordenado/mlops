@@ -10,7 +10,7 @@ data:
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ReyOps - MLOps Infrastructure</title>
+        <title>Fabian Rey - ReyOps MLOps Infrastructure</title>
         <style>
             * {
                 margin: 0;
@@ -21,38 +21,108 @@ data:
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 color: #fff;
-                padding: 20px;
+                padding: 40px 20px;
             }
             .container {
-                max-width: 800px;
+                max-width: 1200px;
+                margin: 0 auto;
                 background: rgba(255, 255, 255, 0.1);
                 backdrop-filter: blur(10px);
                 border-radius: 20px;
                 padding: 60px 40px;
-                text-align: center;
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 50px;
+                border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+                padding-bottom: 30px;
             }
             h1 {
                 font-size: 3.5rem;
-                margin-bottom: 20px;
+                margin-bottom: 10px;
                 font-weight: 800;
                 letter-spacing: -1px;
             }
-            .subtitle {
-                font-size: 1.5rem;
-                margin-bottom: 40px;
+            .tagline {
+                font-size: 1.3rem;
                 opacity: 0.9;
                 font-weight: 300;
+                margin-bottom: 15px;
             }
-            .services {
+            .status {
+                display: inline-block;
+                padding: 8px 20px;
+                background: rgba(76, 217, 100, 0.3);
+                border-radius: 20px;
+                font-size: 0.9rem;
+                margin-top: 15px;
+            }
+            .status::before {
+                content: '●';
+                color: #4cd964;
+                margin-right: 8px;
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+            .section {
+                margin-bottom: 40px;
+            }
+            h2 {
+                font-size: 2rem;
+                margin-bottom: 20px;
+                color: #fff;
+                border-left: 4px solid #4cd964;
+                padding-left: 15px;
+            }
+            .about {
+                font-size: 1.1rem;
+                line-height: 1.8;
+                opacity: 0.95;
+                text-align: left;
+                margin-bottom: 20px;
+            }
+            .tech-stack {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
                 gap: 20px;
-                margin-top: 40px;
+                margin-top: 25px;
+            }
+            .tech-card {
+                background: rgba(255, 255, 255, 0.15);
+                padding: 25px;
+                border-radius: 15px;
+                text-align: left;
+            }
+            .tech-card h3 {
+                font-size: 1.3rem;
+                margin-bottom: 12px;
+                color: #4cd964;
+            }
+            .tech-card ul {
+                list-style: none;
+                margin-top: 10px;
+            }
+            .tech-card li {
+                padding: 6px 0;
+                opacity: 0.9;
+                font-size: 0.95rem;
+            }
+            .tech-card li::before {
+                content: '▹';
+                color: #4cd964;
+                font-weight: bold;
+                margin-right: 10px;
+            }
+            .services-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin-top: 25px;
             }
             .service {
                 background: rgba(255, 255, 255, 0.15);
@@ -62,6 +132,7 @@ data:
                 text-decoration: none;
                 color: #fff;
                 display: block;
+                text-align: center;
             }
             .service:hover {
                 background: rgba(255, 255, 255, 0.25);
@@ -75,50 +146,235 @@ data:
                 font-size: 0.9rem;
                 opacity: 0.8;
             }
-            .status {
-                display: inline-block;
-                padding: 8px 20px;
-                background: rgba(76, 217, 100, 0.3);
-                border-radius: 20px;
-                font-size: 0.9rem;
-                margin-top: 30px;
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-top: 25px;
             }
-            .status::before {
-                content: '●';
+            .stat-card {
+                background: rgba(255, 255, 255, 0.15);
+                padding: 20px;
+                border-radius: 15px;
+                text-align: center;
+            }
+            .stat-number {
+                font-size: 2.5rem;
+                font-weight: 800;
                 color: #4cd964;
-                margin-right: 8px;
-                animation: pulse 2s infinite;
+                margin-bottom: 5px;
             }
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
+            .stat-label {
+                font-size: 0.9rem;
+                opacity: 0.8;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 50px;
+                padding-top: 30px;
+                border-top: 2px solid rgba(255, 255, 255, 0.2);
+                opacity: 0.7;
+                font-size: 0.9rem;
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>ReyOps</h1>
-            <p class="subtitle">Home Server MLOps Infrastructure</p>
-            
-            <div class="status">Infrastructure Online</div>
-            
-            <div class="services">
-                <a href="/crawler" class="service">
-                    <h3>🕷️ Web Crawler</h3>
-                    <p>Data extraction service</p>
-                </a>
-                <a href="/renderer" class="service">
-                    <h3>🎨 Renderer</h3>
-                    <p>Playwright-as-a-Service</p>
-                </a>
-                <a href="/ollama" class="service">
-                    <h3>🧠 Ollama</h3>
-                    <p>LLM inference service</p>
-                </a>
-                <a href="/logs" class="service">
-                    <h3>📊 Logs</h3>
-                    <p>Real-time log viewer</p>
-                </a>
+            <div class="header">
+                <h1>Fabian Rey</h1>
+                <p class="tagline">MLOps Engineer & Infrastructure Architect</p>
+                <div class="status">Home Server Infrastructure Online</div>
+            </div>
+
+            <div class="section">
+                <h2>🚀 About This Infrastructure</h2>
+                <p class="about">
+                    Welcome to ReyOps - a production-grade MLOps infrastructure running entirely on a home server. 
+                    This self-hosted Kubernetes cluster powers machine learning operations, web services, and AI experiments 
+                    with enterprise-level observability, security, and scalability.
+                </p>
+                <p class="about">
+                    Built from scratch with MicroK8s, this infrastructure demonstrates modern DevOps practices including 
+                    containerization, service mesh architecture, infrastructure as code, CI/CD automation, and comprehensive 
+                    monitoring. All services are secured with Cloudflare Tunnel for public access and Private VPN for 
+                    private administration.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>📊 Infrastructure Stats</h2>
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">8+</div>
+                        <div class="stat-label">Microservices</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Uptime Target</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">4GB</div>
+                        <div class="stat-label">Cluster Memory Usage</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">GPU</div>
+                        <div class="stat-label">Accelerated LLM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🛠️ Technology Stack</h2>
+                <div class="tech-stack">
+                    <div class="tech-card">
+                        <h3>🎯 Orchestration</h3>
+                        <ul>
+                            <li>MicroK8s Cluster</li>
+                            <li>Traefik Ingress v3.x</li>
+                            <li>Kustomize for GitOps</li>
+                            <li>Helm Package Manager</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🔒 Security & Networking</h3>
+                        <ul>
+                            <li>Cloudflare Tunnel</li>
+                            <li>Tailscale VPN</li>
+                            <li>TLS/SSL Encryption</li>
+                            <li>Network Policies</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>📈 Observability</h3>
+                        <ul>
+                            <li>Grafana Dashboards</li>
+                            <li>Prometheus Metrics</li>
+                            <li>Loki Log Aggregation</li>
+                            <li>Promtail Log Collection</li>
+                            <li>Dozzle Container Logs</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🗄️ Data Layer</h3>
+                        <ul>
+                            <li>PostgreSQL + pgvector</li>
+                            <li>Redis Cache</li>
+                            <li>Persistent Volumes</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🤖 AI/ML Services</h3>
+                        <ul>
+                            <li>Ollama LLM Server</li>
+                            <li>GPU-Accelerated Inference</li>
+                            <li>Multiple AI Models</li>
+                            <li>Vision Models (Qwen2.5VL)</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>⚙️ Custom Services</h3>
+                        <ul>
+                            <li>Web Crawler API</li>
+                            <li>Playwright Renderer</li>
+                            <li>Python FastAPI</li>
+                            <li>Async Architecture</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🌐 Public Services</h2>
+                <div class="services-grid">
+                    <a href="/crawler" class="service">
+                        <h3>🕷️ Web Crawler</h3>
+                        <p>Intelligent data extraction API with database persistence and caching</p>
+                    </a>
+                    <div class="service" style="pointer-events: none; opacity: 0.6;">
+                        <h3>🎨 Renderer (VPN Only)</h3>
+                        <p>Playwright-as-a-Service for screenshots and HTML rendering</p>
+                    </div>
+                    <div class="service" style="pointer-events: none; opacity: 0.6;">
+                        <h3>🧠 Ollama (VPN Only)</h3>
+                        <p>Local LLM inference with GPU acceleration</p>
+                    </div>
+                    <div class="service" style="pointer-events: none; opacity: 0.6;">
+                        <h3>📊 Grafana (VPN Only)</h3>
+                        <p>Real-time metrics and monitoring dashboards</p>
+                    </div>
+                    <div class="service" style="pointer-events: none; opacity: 0.6;">
+                        <h3>📝 Dozzle (VPN Only)</h3>
+                        <p>Live container log streaming and search</p>
+                    </div>
+                    <div class="service" style="pointer-events: none; opacity: 0.6;">
+                        <h3>🎛️ Traefik Dashboard (VPN Only)</h3>
+                        <p>Ingress controller monitoring and routing</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>💡 Key Features</h2>
+                <div class="tech-stack">
+                    <div class="tech-card">
+                        <h3>🔄 High Availability</h3>
+                        <ul>
+                            <li>Automated health checks</li>
+                            <li>Rolling deployments</li>
+                            <li>Resource limits configured</li>
+                            <li>Auto-restart policies</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>📦 Modern DevOps</h3>
+                        <ul>
+                            <li>Infrastructure as Code</li>
+                            <li>GitOps workflow</li>
+                            <li>Automated deployments</li>
+                            <li>Revision history (3 max)</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>⚡ Performance</h3>
+                        <ul>
+                            <li>Redis caching layer</li>
+                            <li>Nginx reverse proxy</li>
+                            <li>Gzip compression</li>
+                            <li>Optimized resources</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔗 Links & Source Code</h2>
+                <div class="tech-stack">
+                    <div class="tech-card" style="text-align: center;">
+                        <h3>📂 GitHub Repository</h3>
+                        <p style="margin: 15px 0; opacity: 0.9;">
+                            Full infrastructure code, Kubernetes manifests, and deployment scripts
+                        </p>
+                        <a href="https://github.com/fabianreyrey/mlops" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           style="display: inline-block; 
+                                  background: rgba(76, 217, 100, 0.3); 
+                                  padding: 12px 30px; 
+                                  border-radius: 25px; 
+                                  text-decoration: none; 
+                                  color: #fff; 
+                                  font-weight: 600;
+                                  transition: all 0.3s ease;
+                                  border: 2px solid rgba(76, 217, 100, 0.5);">
+                            View on GitHub →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Built with ❤️ by Fabian Rey | Powered by Kubernetes, Cloudflare & Home Lab Hardware</p>
+                <p style="margin-top: 10px;">© 2025 ReyOps | All infrastructure self-hosted and self-managed</p>
             </div>
         </div>
     </body>
