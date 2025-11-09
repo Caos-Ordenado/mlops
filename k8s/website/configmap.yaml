@@ -354,7 +354,7 @@ data:
                         <p style="margin: 15px 0; opacity: 0.9;">
                             Full infrastructure code, Kubernetes manifests, and deployment scripts
                         </p>
-                        <a href="https://github.com/fabianreyrey/mlops" 
+                        <a href="https://github.com/Caos-Ordenado/mlops" 
                            target="_blank" 
                            rel="noopener noreferrer"
                            style="display: inline-block; 
