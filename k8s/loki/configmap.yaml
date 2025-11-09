@@ -32,6 +32,21 @@ data:
           prefix: index_
           period: 24h
 
+    limits_config:
+      # Increase ingestion limits to handle bursts
+      ingestion_rate_mb: 10           # Up from default 4MB/sec
+      ingestion_burst_size_mb: 20     # Up from default 6MB
+      per_stream_rate_limit: 10MB     # Up from default 3MB/sec
+      per_stream_rate_limit_burst: 20MB
+      max_streams_per_user: 0         # No limit
+      max_global_streams_per_user: 0  # No limit
+      # Retention and cardinality  
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h  # 7 days
+      max_label_names_per_series: 30
+      max_label_name_length: 1024
+      max_label_value_length: 2048
+
     ruler:
       storage:
         type: local

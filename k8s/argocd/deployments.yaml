@@ -18,34 +18,18 @@ spec:
     spec:
       containers:
       - name: argocd
-        image: quay.io/argoproj/argocd:v2.8.4
+        image: quay.io/argoproj/argocd:v2.13.2
         imagePullPolicy: IfNotPresent
         command:
           - argocd-server
-          - --staticassets
-          - /shared/app
-          - --rootpath
-          - /argocd
           - --insecure
           - --redis
           - redis.shared:6379
+          - --rootpath
+          - /argocd
           - --basehref
           - /argocd
         env:
-          - name: ARGOCD_API_SERVER_ENABLE_TLS
-            value: "false"
-          - name: ARGOCD_SERVER_ENABLE_GZIP
-            value: "true"
-          - name: ARGOCD_SERVER_ENABLE_PROXY
-            value: "true"
-          - name: ARGOCD_SERVER_STATIC_ASSETS
-            value: /shared/app
-          - name: ARGOCD_SERVER_BASEHREF
-            value: /argocd
-          - name: ARGOCD_SERVER_ROOTPATH
-            value: /argocd
-          - name: ARGOCD_SERVER_COOKIE_SECURE
-            value: "false"
           - name: ARGOCD_REDIS_SERVER
             value: redis.shared:6379
           - name: ARGOCD_REDIS_PASSWORD
@@ -53,6 +37,10 @@ spec:
               secretKeyRef:
                 key: redis-password
                 name: redis-secret
+          - name: ARGOCD_SERVER_ROOT_PATH
+            value: /argocd
+          - name: ARGOCD_SERVER_BASE_HREF
+            value: /argocd
         ports:
           - name: http
             containerPort: 8080
@@ -90,7 +78,7 @@ spec:
     spec:
       containers:
       - name: argocd-repo-server
-        image: quay.io/argoproj/argocd:v2.8.4
+        image: quay.io/argoproj/argocd:v2.13.2
         imagePullPolicy: IfNotPresent
         command:
           - argocd-repo-server
@@ -144,7 +132,7 @@ spec:
     spec:
       containers:
       - name: argocd-application-controller
-        image: quay.io/argoproj/argocd:v2.8.4
+        image: quay.io/argoproj/argocd:v2.13.2
         imagePullPolicy: IfNotPresent
         command:
           - argocd-application-controller

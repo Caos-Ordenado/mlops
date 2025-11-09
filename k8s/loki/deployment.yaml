@@ -25,8 +25,8 @@ spec:
             - name: data
               mountPath: /data
           resources:
-            requests: { cpu: 150m, memory: 384Mi }
-            limits:   { cpu: 800m, memory: 1Gi }
+            requests: { cpu: 200m, memory: 512Mi }
+            limits:   { cpu: 1000m, memory: 1536Mi }
       volumes:
         - name: config
           configMap:

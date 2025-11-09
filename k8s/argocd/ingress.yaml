@@ -9,6 +9,8 @@ spec:
   routes:
     - kind: Rule
       match: PathPrefix(`/argocd`)
+      middlewares:
+        - name: argocd-headers-middleware
       services:
         - name: argocd
           port: 8080

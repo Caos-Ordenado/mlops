@@ -15,9 +15,18 @@ data:
   server.cookie.domain: "internal-vpn-address"
   server.cookie.path: "/argocd"
   server.rootpath: "/argocd"
-  server.basehref: "/argocd/"
+  server.basehref: "/argocd"
+  url: "http://home.server:30080/argocd"
   redis.server: redis.shared:6379
-  redis.password: v5V3PLLf1CufunXMtrbR3H8ypTSpCnCj
+  # Enable local cluster management without GitOps
+  application.noDefaultProject: "true"
+  server.disable.auth: "false"
+  server.insecure: "true"
+  server.enable.grpc.web: "true"
+  # Increase timeout for local operations
+  controller.operation.processors: "10"
+  controller.status.processors: "20"
+  controller.repo.server.timeout.seconds: "60"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -28,17 +37,16 @@ metadata:
     app.kubernetes.io/name: argocd-rbac-cm
     app.kubernetes.io/part-of: argocd
 data:
-  policy.default: role:readonly
+  policy.default: role:admin
   policy.csv: |
-    p, role:org-admin, applications, *, */*, allow
-    p, role:org-admin, clusters, get, *, allow
-    p, role:org-admin, clusters, create, *, allow
-    p, role:org-admin, clusters, update, *, allow
-    p, role:org-admin, clusters, delete, *, allow
-    p, role:org-admin, repositories, get, *, allow
-    p, role:org-admin, repositories, create, *, allow
-    p, role:org-admin, repositories, update, *, allow
-    p, role:org-admin, repositories, delete, *, allow
+    p, role:admin, applications, *, */*, allow
+    p, role:admin, clusters, *, *, allow
+    p, role:admin, repositories, *, *, allow
+    p, role:admin, projects, *, *, allow
+    p, role:admin, logs, get, *, allow
+    p, role:admin, exec, create, */*, allow
+    # Allow full access for local cluster management
+    g, argocd-server, role:admin
 ---
 apiVersion: v1
 kind: ConfigMap

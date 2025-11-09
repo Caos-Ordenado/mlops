@@ -30,6 +30,19 @@ data:
       - job_name: observability
         pipeline_stages:
           - cri: {}
+          # Drop rate-limit error logs to prevent feedback loop
+          - match:
+              selector: '{job="observability"}'
+              stages:
+                - drop:
+                    expression: '.*Per stream rate limit exceeded.*'
+                    drop_counter_reason: 'rate_limit_feedback_loop'
+          - match:
+              selector: '{job="observability"}'
+              stages:
+                - drop:
+                    expression: '.*code = Code\(429\).*'
+                    drop_counter_reason: 'rate_limit_429_errors'
         static_configs:
           - targets:
               - localhost

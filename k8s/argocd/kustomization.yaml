@@ -7,14 +7,16 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - configmaps.yaml
+  - secrets.yaml
+  - redis-secret.yaml
   - services.yaml
   - deployments.yaml
-  - secrets.yaml
-  - storage.yaml
-  - redis-secret.yaml
   - crds.yaml
+  - appproject-crd.yaml
+  - default-project.yaml
   - ingress.yaml
   - middleware.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: argocd 
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: argocd 

@@ -23,7 +23,8 @@ generate_random_string() {
 # Function to generate a bcrypt hash
 generate_bcrypt_hash() {
     local password=$1
-    python3 -c "import bcrypt; print(bcrypt.hashpw('$password'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))"
+    # Use the virtual environment's Python from the project root
+    ../../../.venv/bin/python -c "import bcrypt; print(bcrypt.hashpw('$password'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'))"
 }
 
 # Function to generate a PostgreSQL SCRAM-SHA-256 password
