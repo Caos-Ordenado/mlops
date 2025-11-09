@@ -6,7 +6,7 @@ alwaysApply: false
 
 ## Core Rules
 - Use latest Traefik versions and configurations
-- Local development and home server uses HTTP (no TLS/HTTPS)
+- Use appropriate encryption for production environments
 - Add 20-second timeout to all external requests
 - Use kubectl for cluster interactions
 

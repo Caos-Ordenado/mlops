@@ -5,14 +5,12 @@ alwaysApply: false
 # Home Server Infrastructure Overview
 
 ## Hardware
-- Intel i9 13900k with aand 32 ram
-- GeForce MSI nvidia 4070ti 
-- 32 Gb Ram 
+- High-performance home server with GPU support
 
 ## Core Components
 - MicroK8s cluster on home server
 - Tailscale VPN for remote access
-- Host: home.server (internal-vpn-address)
+- Host: home.server (internal VPN address)
 
 ## Resource Management
 - All deployments have `revisionHistoryLimit: 3` for automatic cleanup
@@ -43,7 +41,7 @@ alwaysApply: false
    - Renderer service (Playwright-as-a-Service) (http://home.server:30080/renderer)
 
 5. **argocd**: GitOps deployment
-   - ArgoCD deployment (v2.8.4)
+   - ArgoCD deployment (Disabled)
 
 ## Directory Structure
 ```

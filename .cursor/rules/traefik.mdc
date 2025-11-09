@@ -7,7 +7,7 @@ alwaysApply: false
 
 ## Core Rules
 - Installed through helm
-- Always use the Traefik version 3.4.0
+- Use latest stable Traefik 3.x
 - [install.sh](mdc:k8s/traefik/install.sh) its how to update
 
 ## Service Configuration
