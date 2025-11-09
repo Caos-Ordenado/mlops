@@ -5,9 +5,9 @@ set -e
 cd "$(dirname "$0")"
 
 # Config (reuse home server settings)
-REMOTE_USER="caos"
-REMOTE_HOST="internal-vpn-address"
-REMOTE_PASS="***REMOVED***"
+REMOTE_USER="${REMOTE_USER:-caos}"
+REMOTE_HOST="${REMOTE_HOST:-home.server}"
+REMOTE_PASS="${REMOTE_PASS:?Error: REMOTE_PASS environment variable not set}"
 IMAGE_NAME="renderer"
 # Unique tag to force rollout to pick new image
 IMAGE_TAG="dev-$(date +%Y%m%d%H%M%S)"

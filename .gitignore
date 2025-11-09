@@ -1,49 +1,55 @@
-/.idea/
-.history/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-.venv/
-.cursor/rules/rules-for-passwords.mdc
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
 
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
-
-
-# Kubernetes runtime files
-*-pvc.json
-
-# Secrets
-**/secrets.yml
-k8s/secrets/generated/
-k8s/secrets/*.env
-.env
-*.env
-
-**/*.egg-info
-**/__pycache__
-**/dist
-**/build
-
-**/server.log
+Thumbs.db
 
 # Logs
-logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-dev-debug.log
-# Dependency directories
-node_modules/
-# Environment variables
-# Editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-# OS specific
+server.log
 
-# Task files
-# tasks.json
-# tasks/ 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Kubernetes secrets (generated)
+k8s/secrets/generated/*.yaml
+
+# Temporary files
+*.tmp
+*.temp

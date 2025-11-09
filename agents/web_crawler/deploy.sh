@@ -6,9 +6,9 @@ set -e
 # Simple deployment script that builds for linux/amd64 and deploys to home server
 
 # Configuration
-REMOTE_USER="caos"
-REMOTE_HOST="internal-vpn-address"
-REMOTE_PASS="***REMOVED***"
+REMOTE_USER="${REMOTE_USER:-caos}"
+REMOTE_HOST="${REMOTE_HOST:-home.server}"
+REMOTE_PASS="${REMOTE_PASS:?Error: REMOTE_PASS environment variable not set}"
 IMAGE_NAME="web-crawler"
 IMAGE_TAG="latest"
 K8S_DIR="../../k8s/web_crawler"

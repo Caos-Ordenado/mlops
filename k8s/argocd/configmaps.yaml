@@ -12,7 +12,7 @@ data:
   server.enable.proxy: "true"
   server.cookie.samesite: "none"
   server.cookie.secure: "false"
-  server.cookie.domain: "internal-vpn-address"
+  server.cookie.domain: "home.server"
   server.cookie.path: "/argocd"
   server.rootpath: "/argocd"
   server.basehref: "/argocd"

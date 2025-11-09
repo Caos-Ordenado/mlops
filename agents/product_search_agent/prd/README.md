@@ -70,7 +70,7 @@ The agent serves as a unified API endpoint that orchestrates multiple AI-powered
 ### 3.2 Infrastructure Dependencies
 
 #### Core Infrastructure (Home Server - MicroK8s Cluster)
-- **Host**: home.server (internal-vpn-address)
+- **Host**: home.server (internal VPN address)
 - **Access**: Tailscale VPN for remote connectivity
 - **Ingress**: Traefik reverse proxy
 
