@@ -50,6 +50,10 @@ server.log
 # Kubernetes secrets (generated)
 k8s/secrets/generated/*.yaml
 
+# History files (IDE artifacts)
+.history/
+**/.history/
+
 # Temporary files
 *.tmp
 *.temp
