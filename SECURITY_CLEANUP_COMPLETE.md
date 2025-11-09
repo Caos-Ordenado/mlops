@@ -5,12 +5,14 @@
 ## ✅ ALL SENSITIVE DATA CLEANED
 
 ### Successfully Removed from Git History:
-1. ✅ **VPN IP Address (100.80.25.51)** - 161 instances → 0
+1. ✅ **VPN IP Address** - 161 instances → 0
 2. ✅ **OpenAI API Key** - 41 instances → 0 (revoked)
 3. ✅ **Old Bcrypt Hash** - 10 instances → 0
-4. ✅ **Old JWT Secret (ZEKYJW2T0nI1C3L73BjdNAz54eNTEpnb)** - 11 instances → 0
-5. ✅ **New JWT Secret (GUjmCppSziSQqbFSILLLQuLJttg2XXGV)** - Never committed
+4. ✅ **Old JWT Secret** - 11 instances → 0
+5. ✅ **New JWT Secret** - Never committed
 6. ✅ **New Bcrypt Hash** - Never committed
+7. ✅ **Email Address** - 1 instance → 0
+8. ✅ **SSH Password** - Removed from documentation
 
 ### Security Improvements Implemented:
 1. ✅ **ArgoCD Secrets** - Removed from Git entirely
