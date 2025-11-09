@@ -5,6 +5,7 @@ metadata:
   namespace: shared
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: postgres

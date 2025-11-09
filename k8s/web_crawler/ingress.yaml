@@ -7,8 +7,20 @@ spec:
   entryPoints:
     - web
   routes:
+    # Public access via tunnel (www.reyops.com)
+    - match: Host(`www.reyops.com`) && PathPrefix(`/crawler`)
+      kind: Rule
+      priority: 200
+      middlewares:
+        - name: crawler-stripprefix
+      services:
+        - name: web-crawler
+          namespace: default
+          port: 8000
+    # VPN/local access
     - match: PathPrefix(`/crawler`)
       kind: Rule
+      priority: 100
       middlewares:
         - name: crawler-stripprefix
       services:

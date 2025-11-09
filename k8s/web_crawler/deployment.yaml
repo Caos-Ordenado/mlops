@@ -4,6 +4,7 @@ metadata:
   name: web-crawler
   namespace: default
 spec:
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: web-crawler

@@ -10,8 +10,8 @@ spec:
     - match: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
       kind: Rule
       services:
-        - name: traefik-dashboard
-          port: 8080
+        - kind: TraefikService
+          name: api@internal
       middlewares:
         - name: traefik-dashboard-stripprefix
           namespace: kube-system

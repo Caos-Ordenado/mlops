@@ -8,6 +8,7 @@ alwaysApply: false
 - Service: Renderer (Playwright-as-a-Service)
 - Base URL: `http://home.server:30080/renderer`
 - Purpose: Reliable screenshots and HTML render without bundling Playwright into each agent
+- Resources: 200m-1000m CPU, 512Mi-2Gi RAM (Playwright requires more memory)
 
 ### Health
 - GET `/renderer/health`

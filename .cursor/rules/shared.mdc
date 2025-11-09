@@ -15,6 +15,10 @@ alwaysApply: true
   - Thread-safe: `enqueue=True`
 - Configuration: `LOG_LEVEL` environment variable
 
+## Shared Infrastructure Services
+- **PostgreSQL**: 250m-500m CPU, 256Mi-1Gi RAM
+- **Redis**: 100m-1000m CPU, 256Mi-1Gi RAM (1GB maxmemory, allkeys-lru)
+
 ## Service Clients
 
 ### Web Crawler Client

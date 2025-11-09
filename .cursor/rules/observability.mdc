@@ -49,10 +49,13 @@ alwaysApply: false
 - **Storage**: Time-series database
 
 ## **Resource Requirements**
-- **Loki**: 1Gi memory limit (optimized for 66 focused log files + traffic)
-- **Promtail**: DaemonSet with minimal resource usage
-- **Prometheus**: Standard metrics collection requirements
-- **Grafana**: Dashboard rendering and query processing
+- **Promtail**: 50m-200m CPU, 128Mi-256Mi RAM (log_level: info, not debug to prevent CPU spikes)
+- **Grafana**: 100m-500m CPU, 256Mi-512Mi RAM
+- **Loki**: 200m-1000m CPU, 512Mi-1.5Gi RAM
+- **Prometheus**: 150m-700m CPU, 512Mi-1Gi RAM
+- **Dozzle**: 50m-200m CPU, 64Mi-256Mi RAM
+- **Kube State Metrics**: 50m-200m CPU, 128Mi-256Mi RAM
+- **Node Exporter**: 25m-200m CPU, 64Mi-256Mi RAM
 
 ## **Key Features**
 - ✅ **Focused Coverage**: ~91 essential log files (39% reduction from 150)

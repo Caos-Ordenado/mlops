@@ -6,6 +6,7 @@ metadata:
   labels: { app: dozzle }
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels: { app: dozzle }
   template:

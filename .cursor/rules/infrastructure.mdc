@@ -14,6 +14,11 @@ alwaysApply: false
 - Tailscale VPN for remote access
 - Host: home.server (internal-vpn-address)
 
+## Resource Management
+- All deployments have `revisionHistoryLimit: 3` for automatic cleanup
+- All containers have CPU and memory limits configured to prevent resource starvation
+- Total cluster usage: ~4GB RAM of 62GB available
+
 ## Namespaces and Services
 1. **kube-system**: Core Kubernetes components
    - Traefik ingress controller

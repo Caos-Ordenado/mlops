@@ -15,6 +15,7 @@ alwaysApply: false
 - **Service**: web-crawler
 - **Update script**: `cd agents/web_crawler && ./deploy.sh`
 - **Access**: http://home.server:30081/crawler/
+- **Resources**: 100m-500m CPU, 512Mi-1Gi RAM
 
 ## API Endpoints
 ### POST /crawler/crawl

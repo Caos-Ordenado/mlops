@@ -5,6 +5,7 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   strategy:
     type: Recreate  # Ensure only one pod exists at a time
   selector:

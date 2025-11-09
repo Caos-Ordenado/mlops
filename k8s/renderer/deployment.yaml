@@ -5,6 +5,7 @@ metadata:
   namespace: default
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: renderer
@@ -15,10 +16,17 @@ spec:
     spec:
       containers:
       - name: renderer
-        image: renderer:latest
+        image: renderer:dev-20250809011358
         imagePullPolicy: Never
         ports:
         - containerPort: 8000
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
         envFrom:
         - configMapRef:
             name: renderer-config
