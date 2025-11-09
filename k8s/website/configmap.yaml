@@ -1,0 +1,186 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: website-html
+  namespace: default
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ReyOps - MLOps Infrastructure</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                padding: 20px;
+            }
+            .container {
+                max-width: 800px;
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 60px 40px;
+                text-align: center;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            }
+            h1 {
+                font-size: 3.5rem;
+                margin-bottom: 20px;
+                font-weight: 800;
+                letter-spacing: -1px;
+            }
+            .subtitle {
+                font-size: 1.5rem;
+                margin-bottom: 40px;
+                opacity: 0.9;
+                font-weight: 300;
+            }
+            .services {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-top: 40px;
+            }
+            .service {
+                background: rgba(255, 255, 255, 0.15);
+                padding: 25px 20px;
+                border-radius: 15px;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                color: #fff;
+                display: block;
+            }
+            .service:hover {
+                background: rgba(255, 255, 255, 0.25);
+                transform: translateY(-5px);
+            }
+            .service h3 {
+                font-size: 1.2rem;
+                margin-bottom: 10px;
+            }
+            .service p {
+                font-size: 0.9rem;
+                opacity: 0.8;
+            }
+            .status {
+                display: inline-block;
+                padding: 8px 20px;
+                background: rgba(76, 217, 100, 0.3);
+                border-radius: 20px;
+                font-size: 0.9rem;
+                margin-top: 30px;
+            }
+            .status::before {
+                content: '●';
+                color: #4cd964;
+                margin-right: 8px;
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>ReyOps</h1>
+            <p class="subtitle">Home Server MLOps Infrastructure</p>
+            
+            <div class="status">Infrastructure Online</div>
+            
+            <div class="services">
+                <a href="/crawler" class="service">
+                    <h3>🕷️ Web Crawler</h3>
+                    <p>Data extraction service</p>
+                </a>
+                <a href="/renderer" class="service">
+                    <h3>🎨 Renderer</h3>
+                    <p>Playwright-as-a-Service</p>
+                </a>
+                <a href="/ollama" class="service">
+                    <h3>🧠 Ollama</h3>
+                    <p>LLM inference service</p>
+                </a>
+                <a href="/logs" class="service">
+                    <h3>📊 Logs</h3>
+                    <p>Real-time log viewer</p>
+                </a>
+            </div>
+        </div>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: website-nginx-config
+  namespace: default
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+    
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+        
+        access_log /var/log/nginx/access.log main;
+        
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        
+        gzip on;
+        gzip_vary on;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_types text/plain text/css text/xml text/javascript 
+                   application/json application/javascript application/xml+rss 
+                   application/rss+xml application/atom+xml image/svg+xml 
+                   text/x-component text/x-js;
+        
+        server {
+            listen 80;
+            server_name _;
+            
+            root /usr/share/nginx/html;
+            index index.html;
+            
+            location / {
+                try_files $uri $uri/ =404;
+            }
+            
+            location /health {
+                access_log off;
+                return 200 "healthy\n";
+                add_header Content-Type text/plain;
+            }
+        }
+    }
+
