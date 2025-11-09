@@ -50,6 +50,12 @@ server.log
 # Kubernetes secrets (generated)
 k8s/secrets/generated/*.yaml
 
+# Large binaries (should not be in git)
+k8s/argocd-linux-amd64
+**/argocd-linux-*
+**/*-amd64
+**/*-arm64
+
 # History files (IDE artifacts)
 .history/
 **/.history/

@@ -3,7 +3,7 @@
 ## ⚠️ CRITICAL: What Was Exposed
 
 The following sensitive data was committed to git history:
-1. **SSH Password**: `***REMOVED***` in deploy.sh files
+1. **SSH Password**: `REDACTED_PASSWORD` in deploy.sh files
 2. **VPN IP Address**: `internal-vpn-address` in multiple files
 3. **Hardware Details**: Specific CPU/GPU models
 
@@ -34,11 +34,11 @@ rm -rf .history
 brew install bfg
 
 # Clean passwords
-echo '***REMOVED***' > passwords.txt
+echo 'REDACTED_PASSWORD' > passwords.txt
 bfg --replace-text passwords.txt --no-blob-protection .git
 
 # Clean IP addresses  
-echo '***REMOVED***' > replacements.txt
+echo 'internal-vpn-address=>REDACTED' > replacements.txt
 bfg --replace-text replacements.txt --no-blob-protection .git
 
 # Step 4: Clean up
