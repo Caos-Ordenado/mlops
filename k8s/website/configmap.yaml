@@ -10,7 +10,9 @@ data:
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Fabian Rey - ReyOps MLOps Infrastructure</title>
+        <meta name="description" content="Nelson Fabian Rey - Solutions Architect & Senior Full Stack Developer specializing in Kubernetes, cloud-native architectures, and production-grade systems">
+        <meta name="author" content="Nelson Fabian Rey">
+        <title>Nelson Fabian Rey - Solutions Architect & Full Stack Developer</title>
         <style>
             * {
                 margin: 0;
@@ -181,178 +183,337 @@ data:
     <body>
         <div class="container">
             <div class="header">
-                <h1>Fabian Rey</h1>
-                <p class="tagline">MLOps Engineer & Infrastructure Architect</p>
-                <div class="status">Home Server Infrastructure Online</div>
+                <h1>Nelson Fabian Rey</h1>
+                <p class="tagline">Solutions Architect | Senior Full Stack Developer</p>
+                <p style="opacity: 0.85; margin-top: 10px; font-size: 1rem;">📍 Montevideo, Uruguay</p>
+                <div class="status">Live Portfolio Infrastructure • Technical Showcase</div>
             </div>
 
             <div class="section">
-                <h2>🚀 About This Infrastructure</h2>
+                <h2>👨‍💻 Professional Profile</h2>
                 <p class="about">
-                    Welcome to ReyOps - a production-grade MLOps infrastructure running entirely on a home server. 
-                    This self-hosted Kubernetes cluster powers machine learning operations, web services, and AI experiments 
-                    with enterprise-level observability, security, and scalability.
+                    <strong>Solutions Architect and Senior Full Stack Developer</strong> specializing in cloud-native architectures, 
+                    Kubernetes platforms, and scalable system design. With extensive experience across the full technology stack, 
+                    I architect and implement production-grade solutions that combine modern development practices with robust infrastructure.
                 </p>
                 <p class="about">
-                    Built from scratch with MicroK8s, this infrastructure demonstrates modern DevOps practices including 
-                    containerization, service mesh architecture, infrastructure as code, CI/CD automation, and comprehensive 
-                    monitoring. All services are secured with Cloudflare Tunnel for public access and Private VPN for 
-                    private administration.
+                    This live infrastructure serves as a <strong>portfolio showcase</strong> demonstrating real-world technical capabilities: 
+                    <strong>self-hosted Kubernetes cluster</strong> running custom AI agents, microservices, comprehensive monitoring, 
+                    and production-grade security. Every component has been designed, implemented, and deployed to showcase 
+                    expertise in infrastructure automation and full-stack development.
+                </p>
+                <p class="about">
+                    <strong>Core expertise:</strong> Python/Node.js backend development, React/modern front-end frameworks, 
+                    Kubernetes orchestration, PostgreSQL/Redis data layers, AI agent architectures, RESTful/GraphQL APIs, 
+                    and infrastructure-as-code practices. Proven ability to deliver end-to-end solutions from architecture design 
+                    through deployment and operations.
                 </p>
             </div>
 
             <div class="section">
-                <h2>📊 Infrastructure Stats</h2>
+                <h2>💼 Professional Experience Highlights</h2>
+                <div class="tech-stack">
+                    <div class="tech-card">
+                        <h3>🎯 Full Stack Development</h3>
+                        <ul>
+                            <li>End-to-end application design</li>
+                            <li>Modern front-end frameworks (React, Vue)</li>
+                            <li>RESTful & GraphQL APIs</li>
+                            <li>Microservices architecture</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🏗️ Solutions Architecture</h3>
+                        <ul>
+                            <li>System design & scalability</li>
+                            <li>Cloud-native infrastructure</li>
+                            <li>Technical requirement analysis</li>
+                            <li>Architecture documentation</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>💡 Technical Showcase</h3>
+                        <ul>
+                            <li>Custom AI agent development</li>
+                            <li>Kubernetes orchestration</li>
+                            <li>Infrastructure automation</li>
+                            <li>Production monitoring stacks</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🎯 Technical Expertise</h2>
+                <div class="tech-stack">
+                    <div class="tech-card">
+                        <h3>🐍 Backend Engineering</h3>
+                        <ul>
+                            <li>Python (FastAPI, AsyncIO)</li>
+                            <li>Node.js & TypeScript</li>
+                            <li>SQLAlchemy & Prisma ORM</li>
+                            <li>Repository Pattern Design</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>☸️ DevOps & Infrastructure</h3>
+                        <ul>
+                            <li>Kubernetes (MicroK8s, K8s)</li>
+                            <li>Docker & Containerization</li>
+                            <li>GitOps (Kustomize, ArgoCD)</li>
+                            <li>CI/CD Pipeline Automation</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🤖 AI/ML & Automation</h3>
+                        <ul>
+                            <li>LLM Agent Development</li>
+                            <li>Vision Model Integration</li>
+                            <li>GPU-Accelerated Inference</li>
+                            <li>Web Scraping & Data Extraction</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🗄️ Data Engineering</h3>
+                        <ul>
+                            <li>PostgreSQL + pgvector</li>
+                            <li>Redis Caching & Pub/Sub</li>
+                            <li>Database Migration (Alembic)</li>
+                            <li>Data Pipeline Architecture</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>📊 Monitoring & Observability</h3>
+                        <ul>
+                            <li>Prometheus & Grafana</li>
+                            <li>Loki Log Aggregation</li>
+                            <li>Distributed Tracing</li>
+                            <li>Performance Optimization</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🔒 Security & Best Practices</h3>
+                        <ul>
+                            <li>Zero-Trust Architecture</li>
+                            <li>Secret Management</li>
+                            <li>OWASP Security Standards</li>
+                            <li>Incident Response & Debugging</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🚀 Portfolio Showcase Infrastructure</h2>
                 <div class="stats">
                     <div class="stat-card">
                         <div class="stat-number">8+</div>
                         <div class="stat-label">Microservices</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">100%</div>
-                        <div class="stat-label">Uptime Target</div>
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Live Uptime</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">4GB</div>
-                        <div class="stat-label">Cluster Memory Usage</div>
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Custom AI Agents</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">GPU</div>
-                        <div class="stat-label">Accelerated LLM</div>
+                        <div class="stat-number">K8s</div>
+                        <div class="stat-label">Cloud-Native</div>
                     </div>
                 </div>
             </div>
 
             <div class="section">
-                <h2>🛠️ Technology Stack</h2>
+                <h2>🏗️ Architecture Highlights</h2>
                 <div class="tech-stack">
                     <div class="tech-card">
-                        <h3>🎯 Orchestration</h3>
+                        <h3>🕷️ Web Crawler Agent</h3>
                         <ul>
-                            <li>MicroK8s Cluster</li>
-                            <li>Traefik Ingress v3.x</li>
-                            <li>Kustomize for GitOps</li>
-                            <li>Helm Package Manager</li>
+                            <li>Async Python + FastAPI</li>
+                            <li>PostgreSQL Persistence</li>
+                            <li>Redis Caching Layer</li>
+                            <li>Concurrent Task Processing</li>
                         </ul>
                     </div>
                     <div class="tech-card">
-                        <h3>🔒 Security & Networking</h3>
+                        <h3>🎨 Renderer Service</h3>
                         <ul>
-                            <li>Cloudflare Tunnel</li>
-                            <li>Tailscale VPN</li>
-                            <li>TLS/SSL Encryption</li>
-                            <li>Network Policies</li>
+                            <li>Playwright-as-a-Service</li>
+                            <li>Screenshot Generation</li>
+                            <li>HTML Rendering API</li>
+                            <li>Containerized Execution</li>
                         </ul>
                     </div>
                     <div class="tech-card">
-                        <h3>📈 Observability</h3>
+                        <h3>🤖 Product Search Agent</h3>
                         <ul>
-                            <li>Grafana Dashboards</li>
+                            <li>LLM-Powered Analysis</li>
+                            <li>Vision Model Integration</li>
+                            <li>Multi-Source Aggregation</li>
+                            <li>Intelligent Extraction</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>📈 Monitoring Stack</h3>
+                        <ul>
                             <li>Prometheus Metrics</li>
                             <li>Loki Log Aggregation</li>
-                            <li>Promtail Log Collection</li>
-                            <li>Dozzle Container Logs</li>
+                            <li>Grafana Dashboards</li>
+                            <li>Alerting Rules</li>
                         </ul>
                     </div>
                     <div class="tech-card">
-                        <h3>🗄️ Data Layer</h3>
+                        <h3>🗄️ Shared Infrastructure</h3>
                         <ul>
-                            <li>PostgreSQL + pgvector</li>
-                            <li>Redis Cache</li>
-                            <li>Persistent Volumes</li>
+                            <li>PostgreSQL w/ Alembic</li>
+                            <li>Redis w/ Connection Pool</li>
+                            <li>Repository Pattern</li>
+                            <li>Centralized Logging</li>
                         </ul>
                     </div>
                     <div class="tech-card">
-                        <h3>🤖 AI/ML Services</h3>
+                        <h3>🔒 Security & DevOps</h3>
                         <ul>
-                            <li>Ollama LLM Server</li>
-                            <li>GPU-Accelerated Inference</li>
-                            <li>Multiple AI Models</li>
-                            <li>Vision Models (Qwen2.5VL)</li>
-                        </ul>
-                    </div>
-                    <div class="tech-card">
-                        <h3>⚙️ Custom Services</h3>
-                        <ul>
-                            <li>Web Crawler API</li>
-                            <li>Playwright Renderer</li>
-                            <li>Python FastAPI</li>
-                            <li>Async Architecture</li>
+                            <li>Zero-Trust Architecture</li>
+                            <li>Cloudflare Tunnel</li>
+                            <li>Secret Management</li>
+                            <li>GitOps Workflow</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
             <div class="section">
-                <h2>🌐 Public Services</h2>
+                <h2>💼 Technical Demonstrations</h2>
                 <div class="services-grid">
                     <a href="/crawler" class="service">
-                        <h3>🕷️ Web Crawler</h3>
-                        <p>Intelligent data extraction API with database persistence and caching</p>
+                        <h3>🕷️ Web Crawler API</h3>
+                        <p>Live endpoint showcasing async Python + FastAPI architecture</p>
                     </a>
                     <div class="service" style="pointer-events: none; opacity: 0.6;">
-                        <h3>🎨 Renderer (VPN Only)</h3>
-                        <p>Playwright-as-a-Service for screenshots and HTML rendering</p>
+                        <h3>🎨 Renderer Service</h3>
+                        <p>Playwright-as-a-Service demonstration (VPN-protected)</p>
                     </div>
                     <div class="service" style="pointer-events: none; opacity: 0.6;">
-                        <h3>🧠 Ollama (VPN Only)</h3>
-                        <p>Local LLM inference with GPU acceleration</p>
+                        <h3>🧠 LLM Integration</h3>
+                        <p>AI agent infrastructure with GPU acceleration</p>
                     </div>
                     <div class="service" style="pointer-events: none; opacity: 0.6;">
-                        <h3>📊 Grafana (VPN Only)</h3>
-                        <p>Real-time metrics and monitoring dashboards</p>
-                    </div>
-                    <div class="service" style="pointer-events: none; opacity: 0.6;">
-                        <h3>📝 Dozzle (VPN Only)</h3>
-                        <p>Live container log streaming and search</p>
-                    </div>
-                    <div class="service" style="pointer-events: none; opacity: 0.6;">
-                        <h3>🎛️ Traefik Dashboard (VPN Only)</h3>
-                        <p>Ingress controller monitoring and routing</p>
+                        <h3>📊 Observability Stack</h3>
+                        <p>Grafana dashboards with Prometheus + Loki</p>
                     </div>
                 </div>
             </div>
 
             <div class="section">
-                <h2>💡 Key Features</h2>
+                <h2>✨ Core Strengths & Differentiators</h2>
                 <div class="tech-stack">
                     <div class="tech-card">
-                        <h3>🔄 High Availability</h3>
+                        <h3>🎯 Full Stack Mastery</h3>
                         <ul>
-                            <li>Automated health checks</li>
-                            <li>Rolling deployments</li>
-                            <li>Resource limits configured</li>
-                            <li>Auto-restart policies</li>
+                            <li>End-to-end solution delivery</li>
+                            <li>Front-end & back-end expertise</li>
+                            <li>Seamless integration capabilities</li>
+                            <li>Modern framework proficiency</li>
                         </ul>
                     </div>
                     <div class="tech-card">
-                        <h3>📦 Modern DevOps</h3>
+                        <h3>🏗️ Architecture Excellence</h3>
                         <ul>
-                            <li>Infrastructure as Code</li>
-                            <li>GitOps workflow</li>
-                            <li>Automated deployments</li>
-                            <li>Revision history (3 max)</li>
+                            <li>Scalable system design</li>
+                            <li>Microservices architecture</li>
+                            <li>Agent-based patterns</li>
+                            <li>Performance optimization</li>
                         </ul>
                     </div>
                     <div class="tech-card">
-                        <h3>⚡ Performance</h3>
+                        <h3>📦 Production-Ready Mindset</h3>
                         <ul>
-                            <li>Redis caching layer</li>
-                            <li>Nginx reverse proxy</li>
-                            <li>Gzip compression</li>
-                            <li>Optimized resources</li>
+                            <li>Zero-downtime deployments</li>
+                            <li>Comprehensive monitoring</li>
+                            <li>Security-first approach</li>
+                            <li>Incident response expertise</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🤝 Client-Focused Delivery</h3>
+                        <ul>
+                            <li>Requirement translation</li>
+                            <li>Clear communication</li>
+                            <li>Agile methodology</li>
+                            <li>Proven project success</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>💡 Innovation & Automation</h3>
+                        <ul>
+                            <li>AI/ML integration</li>
+                            <li>Process automation</li>
+                            <li>Intelligent agents</li>
+                            <li>Cutting-edge solutions</li>
+                        </ul>
+                    </div>
+                    <div class="tech-card">
+                        <h3>📈 Business Value Focus</h3>
+                        <ul>
+                            <li>ROI-driven decisions</li>
+                            <li>Cost optimization</li>
+                            <li>Performance improvements</li>
+                            <li>Measurable results (30%+ gains)</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
             <div class="section">
-                <h2>🔗 Links & Source Code</h2>
+                <h2>🔗 Connect & Collaborate</h2>
                 <div class="tech-stack">
                     <div class="tech-card" style="text-align: center;">
-                        <h3>📂 GitHub Repository</h3>
+                        <h3>💼 LinkedIn</h3>
                         <p style="margin: 15px 0; opacity: 0.9;">
-                            Full infrastructure code, Kubernetes manifests, and deployment scripts
+                            Professional network and career history
+                        </p>
+                        <a href="https://www.linkedin.com/in/nelson-fabian-rey-5177027/" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           style="display: inline-block; 
+                                  background: rgba(76, 217, 100, 0.3); 
+                                  padding: 12px 30px; 
+                                  border-radius: 25px; 
+                                  text-decoration: none; 
+                                  color: #fff; 
+                                  font-weight: 600;
+                                  transition: all 0.3s ease;
+                                  border: 2px solid rgba(76, 217, 100, 0.5);">
+                            View Profile →
+                        </a>
+                    </div>
+                    <div class="tech-card" style="text-align: center;">
+                        <h3>💚 Upwork</h3>
+                        <p style="margin: 15px 0; opacity: 0.9;">
+                            Freelance projects and client reviews
+                        </p>
+                        <a href="https://www.upwork.com/freelancers/fabianr10" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           style="display: inline-block; 
+                                  background: rgba(76, 217, 100, 0.3); 
+                                  padding: 12px 30px; 
+                                  border-radius: 25px; 
+                                  text-decoration: none; 
+                                  color: #fff; 
+                                  font-weight: 600;
+                                  transition: all 0.3s ease;
+                                  border: 2px solid rgba(76, 217, 100, 0.5);">
+                            Hire on Upwork →
+                        </a>
+                    </div>
+                    <div class="tech-card" style="text-align: center;">
+                        <h3>📂 Portfolio Repository</h3>
+                        <p style="margin: 15px 0; opacity: 0.9;">
+                            Infrastructure-as-code and deployment manifests showcasing technical capabilities
                         </p>
                         <a href="https://github.com/Caos-Ordenado/mlops" 
                            target="_blank" 
@@ -373,8 +534,13 @@ data:
             </div>
 
             <div class="footer">
-                <p>Built with ❤️ by Fabian Rey | Powered by Kubernetes, Cloudflare & Home Lab Hardware</p>
-                <p style="margin-top: 10px;">© 2025 ReyOps | All infrastructure self-hosted and self-managed</p>
+                <p>🚀 Technical Portfolio Showcase | Built & Maintained by Nelson Fabian Rey</p>
+                <p style="margin-top: 10px;">
+                    <a href="https://www.linkedin.com/in/nelson-fabian-rey-5177027/" target="_blank" rel="noopener" style="color: #4cd964; text-decoration: none; margin: 0 15px;">LinkedIn</a>
+                    <a href="https://www.upwork.com/freelancers/fabianr10" target="_blank" rel="noopener" style="color: #4cd964; text-decoration: none; margin: 0 15px;">Upwork</a>
+                    <a href="https://github.com/Caos-Ordenado/mlops" target="_blank" rel="noopener" style="color: #4cd964; text-decoration: none; margin: 0 15px;">GitHub</a>
+                </p>
+                <p style="margin-top: 15px; font-size: 0.85rem;">© 2025 | Portfolio infrastructure demonstrating cloud-native development</p>
             </div>
         </div>
     </body>
@@ -424,6 +590,15 @@ data:
         server {
             listen 80;
             server_name _;
+            
+            # Security Headers
+            add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+            add_header Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self';" always;
+            add_header X-Frame-Options "SAMEORIGIN" always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-XSS-Protection "1; mode=block" always;
+            add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+            add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
             
             root /usr/share/nginx/html;
             index index.html;
