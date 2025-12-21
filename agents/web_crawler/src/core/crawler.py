@@ -2,12 +2,12 @@
 Web crawler implementation.
 """
 
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional
 import asyncio
 import os
 import xml.etree.ElementTree as ET
 from urllib.parse import urljoin, urlparse
-from pydantic import BaseModel, Field
+import fnmatch
 from dotenv import load_dotenv
 import aiohttp
 from asyncio import TimeoutError
@@ -49,21 +49,32 @@ def get_domain(url: str) -> str:
 class WebCrawlerAgent:
     """Agent for crawling web pages with database integration and robust features."""
     
-    def __init__(self, settings: CrawlerSettings, db_context: Optional[DatabaseContext] = None):
+    def __init__(
+        self,
+        settings: CrawlerSettings,
+        db_context: Optional[DatabaseContext] = None,
+        use_database: bool = True,
+    ):
         """Initialize the web crawler agent."""
         self.settings = settings
         self.session = None
         self.start_time = None
         self.db_context = db_context
+        self.use_database = use_database
+        self._owns_db_context = False
+        self._robots_cache: Dict[str, RobotFileParser] = {}
+        self._robots_cache_ts: Dict[str, float] = {}
+        self._robots_cache_ttl_seconds = int(os.getenv("CRAWLER_ROBOTS_CACHE_TTL_SECONDS", "3600"))
         logger.info(f"Initialized robust web crawler agent with settings: {settings.model_dump()}")
     
     async def __aenter__(self):
         """Enter async context."""
         # Create session with comprehensive browser-like headers
         self.session = aiohttp.ClientSession(headers=self.settings._get_browser_headers())
-        if not self.db_context:
+        if self.use_database and self.db_context is None:
             self.db_context = DatabaseContext()
             await self.db_context.__aenter__()
+            self._owns_db_context = True
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -71,8 +82,90 @@ class WebCrawlerAgent:
         if self.session:
             await self.session.close()
         # Only close the db_context if we created it
-        if self.db_context and not hasattr(self, '_external_db_context'):
+        if self._owns_db_context and self.db_context:
             await self.db_context.__aexit__(exc_type, exc_val, exc_tb)
+
+    async def _maybe_backoff_for_memory(self, context: str) -> None:
+        """Best-effort memory backoff to avoid exhaustion."""
+        try:
+            if self.settings.memory_threshold <= 0:
+                return
+            memory_percent = get_memory_usage()
+            if memory_percent <= self.settings.memory_threshold:
+                return
+            # Simple adaptive backoff: sleep longer as we exceed threshold.
+            over = max(0.0, memory_percent - self.settings.memory_threshold)
+            sleep_s = min(5.0, 0.25 + over / 10.0)
+            logger.warning(
+                f"Memory threshold exceeded [{context}]: {memory_percent:.2f}% > {self.settings.memory_threshold:.2f}% "
+                f"(backing off {sleep_s:.2f}s)"
+            )
+            await asyncio.sleep(sleep_s)
+        except Exception as e:
+            logger.debug(f"Memory backoff check failed [{context}]: {e}")
+
+    def _matches_exclude_patterns(self, url: str) -> bool:
+        """Return True if the URL matches any exclude pattern.
+
+        Semantics:
+        - If a pattern contains glob metacharacters (* ? []), use fnmatch against the full URL.
+        - Otherwise, treat it as a simple substring match (backward compatible).
+        """
+        if not self.settings.exclude_patterns:
+            return False
+        for pattern in self.settings.exclude_patterns:
+            if pattern is None:
+                continue
+            p = pattern.strip()
+            if not p:
+                continue
+            if any(ch in p for ch in ["*", "?", "[", "]"]):
+                if fnmatch.fnmatch(url, p):
+                    return True
+            else:
+                if p in url:
+                    return True
+        return False
+
+    async def _is_allowed_by_robots(self, url: str) -> bool:
+        """Return True if robots.txt allows fetching this url (best-effort)."""
+        if not self.settings.respect_robots:
+            return True
+        try:
+            parsed = urlparse(url)
+            if not parsed.scheme or not parsed.netloc:
+                return True
+            domain = parsed.netloc
+            now = time.time()
+            cached = self._robots_cache.get(domain)
+            cached_ts = self._robots_cache_ts.get(domain, 0.0)
+            if cached and (now - cached_ts) < self._robots_cache_ttl_seconds:
+                return cached.can_fetch(self.settings.user_agent, url)
+
+            robots_url = f"{parsed.scheme}://{domain}/robots.txt"
+            rp = RobotFileParser()
+            rp.set_url(robots_url)
+            try:
+                # Keep robots fetching bounded; if it fails, allow (best-effort).
+                async with self.session.get(robots_url, timeout=min(10, self.settings.timeout / 1000)) as resp:
+                    if resp.status >= 400:
+                        self._robots_cache[domain] = rp
+                        self._robots_cache_ts[domain] = now
+                        return True
+                    content = await resp.text()
+                rp.parse(content.splitlines())
+            except Exception as e:
+                logger.debug(f"robots.txt fetch/parse failed for {robots_url}: {e}")
+                self._robots_cache[domain] = rp
+                self._robots_cache_ts[domain] = now
+                return True
+
+            self._robots_cache[domain] = rp
+            self._robots_cache_ts[domain] = now
+            return rp.can_fetch(self.settings.user_agent, url)
+        except Exception as e:
+            logger.debug(f"robots allow check failed for {url}: {e}")
+            return True
     
     async def crawl_url(self, url: str) -> Optional[Dict[str, Any]]:
         """Crawl a single URL and return the extracted data."""
@@ -85,6 +178,7 @@ class WebCrawlerAgent:
                 logger.debug(f"Memory usage before crawling {url}: {memory_percent:.2f}%")
             
             # Perform the crawl
+            await self._maybe_backoff_for_memory("before_fetch")
             async with self.session.get(url, timeout=self.settings.timeout/1000) as response:
                 html = await response.text()
                 soup = BeautifulSoup(html, 'html.parser')
@@ -148,17 +242,18 @@ class WebCrawlerAgent:
                 )
                 
                 # Save webpage using shared components with timeout protection
-                try:
-                    await asyncio.wait_for(
-                        self.db_context.webpages.save(webpage),
-                        timeout=30.0  # 30 second timeout for database operations
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning(f"Database save timed out for {url}")
-                    # Continue without saving to database, but still return the result
-                except Exception as e:
-                    logger.error(f"Database save failed for {url}: {str(e)}")
-                    # Continue without saving to database, but still return the result
+                if self.use_database and self.db_context is not None:
+                    try:
+                        await asyncio.wait_for(
+                            self.db_context.webpages.save(webpage),
+                            timeout=30.0  # 30 second timeout for database operations
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning(f"Database save timed out for {url}")
+                        # Continue without saving to database, but still return the result
+                    except Exception as e:
+                        logger.error(f"Database save failed for {url}: {str(e)}")
+                        # Continue without saving to database, but still return the result
                 
                 # Check memory usage after crawling
                 if self.settings.debug:
@@ -198,7 +293,7 @@ class WebCrawlerAgent:
             return []
 
         # Track successfully crawled URLs separately from processed ones
-        successful_crawls = len([url for url in self.settings.processed_urls if url in self.settings.processed_urls])
+        successful_crawls = len(self.settings.processed_urls)
         if successful_crawls >= self.settings.max_pages:
             logger.info(f"Reached max pages {self.settings.max_pages}")
             return []
@@ -234,6 +329,11 @@ class WebCrawlerAgent:
                     if self.start_time and (time.time() - self.start_time) > self.settings.max_total_time:
                         logger.warning(f"Time limit exceeded, skipping {url}")
                         return None
+                    # Enforce robots.txt (best-effort) if enabled
+                    if not await self._is_allowed_by_robots(url):
+                        logger.info(f"Skipping {url} due to robots.txt rules")
+                        return None
+                    await self._maybe_backoff_for_memory("before_crawl_url")
                     result = await self.crawl_url(url)
                     if result:
                         self.settings.processed_urls.add(url)
@@ -314,8 +414,7 @@ class WebCrawlerAgent:
                 return False
 
         # Check exclude patterns
-        if self.settings.exclude_patterns:
-            if any(pattern in url for pattern in self.settings.exclude_patterns):
-                return False
+        if self._matches_exclude_patterns(url):
+            return False
 
         return True 

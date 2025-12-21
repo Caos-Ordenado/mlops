@@ -17,10 +17,10 @@ spec:
         - name: website
           namespace: default
           port: 80
-    # VPN/local access - Root path
+    # VPN/local access - Root path (lowest priority to act as fallback)
     - match: PathPrefix(`/`)
       kind: Rule
-      priority: 50
+      priority: 1
       services:
         - name: website
           namespace: default

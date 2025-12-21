@@ -24,8 +24,10 @@ logger = setup_logger("web_crawler.api.routes")
 
 @router.post("/crawl", response_model=CrawlResponse)
 async def crawl(request: CrawlRequest, http_req: Request) -> CrawlResponse:
+    start_time = time.time()
     try:
         db_context = getattr(http_req.app.state, "db_context", None)
+        use_database = db_context is not None
         settings = CrawlerSettings(
             max_pages=request.max_pages,
             max_depth=request.max_depth,
@@ -34,25 +36,24 @@ async def crawl(request: CrawlRequest, http_req: Request) -> CrawlResponse:
             max_total_time=request.max_total_time,
             max_concurrent_pages=request.max_concurrent_pages,
             memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "80.0")),
+            user_agent=os.getenv(
+                "CRAWLER_USER_AGENT",
+                CrawlerSettings.model_fields["user_agent"].default,
+            ),
             allowed_domains=request.allowed_domains,
             exclude_patterns=request.exclude_patterns,
         )
 
-        try:
-            async with WebCrawlerAgent(settings, db_context=db_context) as agent:
-                results = await agent.crawl_urls(request.urls)
-        except Exception as db_error:
-            logger.warning(f"Database-enabled crawler failed: {db_error}")
-            async with WebCrawlerAgent(settings, db_context=None) as agent:
-                agent.db_context = None
-                results = await agent.crawl_urls(request.urls)
+        async with WebCrawlerAgent(settings, db_context=db_context, use_database=use_database) as agent:
+            results = await agent.crawl_urls(request.urls)
 
+        elapsed_time = time.time() - start_time
         return CrawlResponse(
             success=True,
             results=[CrawlResult(**result) for result in results],
             total_urls=len(request.urls),
             crawled_urls=len(results),
-            elapsed_time=0.0,
+            elapsed_time=elapsed_time,
         )
     except Exception as e:
         logger.error(f"Error during crawling: {str(e)}")
@@ -68,6 +69,7 @@ async def crawl(request: CrawlRequest, http_req: Request) -> CrawlResponse:
 async def crawl_single(request: SingleCrawlRequest, http_req: Request) -> SingleCrawlResponse:
     start_time = time.time()
     db_context = getattr(http_req.app.state, "db_context", None)
+    use_database = db_context is not None
 
     try:
         settings = CrawlerSettings(
@@ -78,22 +80,20 @@ async def crawl_single(request: SingleCrawlRequest, http_req: Request) -> Single
             max_total_time=min(300, request.timeout // 1000 + 60),
             max_concurrent_pages=1,
             memory_threshold=float(os.getenv("CRAWLER_MEMORY_THRESHOLD", "85.0")),
+            user_agent=os.getenv(
+                "CRAWLER_USER_AGENT",
+                CrawlerSettings.model_fields["user_agent"].default,
+            ),
         )
 
-        try:
-            async with WebCrawlerAgent(settings, db_context=db_context) as agent:
-                try:
-                    result = await asyncio.wait_for(agent.crawl_url(request.url), timeout=request.timeout / 1000.0)
-                except asyncio.TimeoutError:
-                    raise HTTPException(status_code=408, detail=f"Request timed out after {request.timeout/1000:.1f} seconds")
-        except Exception as db_error:
-            logger.warning(f"Database-enabled crawler failed: {db_error}")
-            async with WebCrawlerAgent(settings, db_context=None) as agent:
-                agent.db_context = None
-                try:
-                    result = await asyncio.wait_for(agent.crawl_url(request.url), timeout=request.timeout / 1000.0)
-                except asyncio.TimeoutError:
-                    raise HTTPException(status_code=408, detail=f"Request timed out after {request.timeout/1000:.1f} seconds")
+        async with WebCrawlerAgent(settings, db_context=db_context, use_database=use_database) as agent:
+            try:
+                result = await asyncio.wait_for(agent.crawl_url(request.url), timeout=request.timeout / 1000.0)
+            except asyncio.TimeoutError:
+                raise HTTPException(
+                    status_code=408,
+                    detail=f"Request timed out after {request.timeout/1000:.1f} seconds",
+                )
 
         elapsed_time = time.time() - start_time
 
@@ -171,6 +171,7 @@ async def extract_vision(request: VisionExtractRequest, http_req: Request) -> Vi
                     timeout_ms=request.timeout,
                     viewport_width=viewport_width,
                     viewport_height=viewport_height,
+                        viewport_randomize=True,
                     full_page=True,
                     full_page_strategy="scroll",
                 ).model_dump()
