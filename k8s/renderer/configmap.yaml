@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: renderer-config
+  namespace: default
+data:
+  LOG_LEVEL: "INFO"
+  RENDERER_HEADLESS: "true"
+  RENDERER_VIEWPORT_WIDTH: "1280"
+  RENDERER_VIEWPORT_HEIGHT: "800"
+  RENDERER_SNAPSHOT_DIR: "/var/lib/renderer/snapshots"
+  RENDERER_SNAPSHOT_TTL_SECONDS: "86400"
+  RENDERER_CLEANUP_INTERVAL_SECONDS: "3600"
+
+

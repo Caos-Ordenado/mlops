@@ -1,0 +1,23 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: webui-stripprefix
+  namespace: default
+spec:
+  stripPrefix:
+    prefixes:
+      - /webui
+      - /webui/
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: webui-forwarded-prefix
+  namespace: default
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Prefix: /webui
+
+
+

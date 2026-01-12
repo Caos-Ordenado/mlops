@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: observability
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+
+    scrape_configs:
+      # node-exporter en cada nodo
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name]
+            action: keep
+            regex: observability;node-exporter
+
+      # kube-state-metrics (estado de objetos)
+      - job_name: 'kube-state-metrics'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name]
+            action: keep
+            regex: observability;kube-state-metrics
+
+      # Scrape genérico por anotaciones (si algún pod expone /metrics):
+      # anota tu pod con:
+      #   prometheus.io/scrape: "true"
+      #   prometheus.io/port: "8000"
+      #   prometheus.io/path: "/metrics"
+      - job_name: 'pods-annotations'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - action: keep
+            source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            regex: "true"
+          - action: replace
+            source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            target_label: __metrics_path__
+            regex: (.+)
+          - action: replace
+            source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            target_label: __address__
+            regex: (.+):\d+;(\d+)
+            replacement: $1:$2

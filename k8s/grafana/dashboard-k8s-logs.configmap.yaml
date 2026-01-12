@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-k8s-logs
+  namespace: observability
+  labels:
+    app: grafana
+    grafana_dashboard: "1"
+data:
+  k8s-logs.json: |
+    {
+      "id": null,
+      "uid": "k8s-logs-main",
+      "title": "K8s • Logs (Loki)",
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "10s",
+      "tags": ["k8s", "loki", "home"],
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "type": "query",
+            "datasource": {"type": "loki", "uid": "loki"},
+            "query": "label_values({job=~\"applications|observability|infrastructure|traffic\"}, container)",
+            "current": {"text": "All", "value": ""},
+            "refresh": 2,
+            "includeAll": true,
+            "multi": false,
+            "label": "Service"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Errores (últimos 5m)",
+          "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count_over_time({job=~\"applications|observability|infrastructure\"} |= \"ERROR\" [5m])"
+            }
+          ],
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}
+        },
+        {
+          "type": "stat",
+          "title": "Warnings (últimos 5m)",
+          "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "count_over_time({job=\"static-containers\"} |= \"WARN\" [5m])"
+            }
+          ],
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}
+        },
+        {
+          "type": "table",
+          "title": "Pods más ruidosos (líneas en 5m)",
+          "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (filename) (count_over_time({job=\"static-containers\"} [$__interval]))",
+              "legendFormat": "{{filename}}"
+            }
+          ],
+          "transformations": [
+            {"id": "reduce", "options": {"reducers": ["lastNotNull"]}},
+            {"id": "sortBy", "options": {"fields": {}, "sort": [{"field": "Last*","desc": true}]}}
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "web-crawler (última hora)",
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 10},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            { "refId": "A", "expr": "{filename=~\".*web-crawler.*\"}" }
+          ],
+          "options": {"showTime": true, "wrapLogMessage": true}
+        },
+        {
+          "type": "logs",
+          "title": "renderer (última hora)",
+          "gridPos": {"x": 12, "y": 8, "w": 12, "h": 10},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            { "refId": "A", "expr": "{filename=~\".*renderer.*\"}" }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "ollama (última hora)",
+          "gridPos": {"x": 0, "y": 14, "w": 12, "h": 10},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            { "refId": "A", "expr": "{filename=~\".*ollama.*\"}" }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "traefik (última hora)",
+          "gridPos": {"x": 0, "y": 24, "w": 24, "h": 10},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            { "refId": "A", "expr": "{filename=~\".*traefik.*\"}" }
+          ]
+        },
+        {
+          "type": "logs",
+          "title": "Explorar por Namespace/App",
+          "gridPos": {"x": 0, "y": 34, "w": 24, "h": 12},
+          "datasource": {"type": "loki", "uid": "loki"},
+          "targets": [
+            { "refId": "A", "expr": "{job=\"static-containers\"}" }
+          ]
+        }
+      ],
+      "time": { "from": "now-1h", "to": "now" }
+    }

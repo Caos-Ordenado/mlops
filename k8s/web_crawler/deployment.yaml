@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-crawler
+  namespace: default
+spec:
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: web-crawler
+  template:
+    metadata:
+      labels:
+        app: web-crawler
+    spec:
+      containers:
+      - name: web-crawler
+        image: web-crawler:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        # Add health checks
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: web-crawler-config
+        env:
+        # PostgreSQL host
+        - name: POSTGRES_HOST
+          value: "postgres.shared.svc.cluster.local"
+        # PostgreSQL credentials from existing secret
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_DB
+        # Redis host
+        - name: REDIS_HOST
+          value: "redis.shared.svc.cluster.local"
+        # Redis credentials from existing secret
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: redis-password

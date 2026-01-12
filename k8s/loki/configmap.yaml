@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: observability
+data:
+  loki.yaml: |
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 0
+
+    auth_enabled: false
+
+    common:
+      path_prefix: /data/loki
+      storage:
+        filesystem:
+          chunks_directory: /data/loki/chunks
+          rules_directory: /data/loki/rules
+      replication_factor: 1
+      ring:
+        kvstore:
+          store: inmemory
+
+    schema_config:
+      configs:
+      - from: 2020-10-24
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+    limits_config:
+      # Increase ingestion limits to handle bursts
+      ingestion_rate_mb: 10           # Up from default 4MB/sec
+      ingestion_burst_size_mb: 20     # Up from default 6MB
+      per_stream_rate_limit: 10MB     # Up from default 3MB/sec
+      per_stream_rate_limit_burst: 20MB
+      max_streams_per_user: 10000     # Limit streams to prevent memory explosion
+      max_global_streams_per_user: 10000
+      # Retention and cardinality  
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h  # 7 days
+      max_label_names_per_series: 30
+      max_label_name_length: 1024
+      max_label_value_length: 2048
+      # Memory optimization
+      max_query_length: 721h          # 30 days max query range
+      max_query_lookback: 168h        # 7 days lookback
+      max_cache_freshness_per_query: 10m
+      split_queries_by_interval: 30m  # Split large queries
+
+    ruler:
+      storage:
+        type: local
+        local:
+          directory: /data/loki/rules
+      rule_path: /data/loki/rules-temp
+      alertmanager_url: http://localhost:9093
+      ring:
+        kvstore:
+          store: inmemory
+      enable_api: true
+
+    analytics:
+      reporting_enabled: false

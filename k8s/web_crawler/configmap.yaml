@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-crawler-config
+  namespace: default
+data:
+  # Crawler Settings
+  CRAWLER_MAX_PAGES: "1000"
+  CRAWLER_MAX_DEPTH: "5"
+  CRAWLER_TIMEOUT: "180000"
+  CRAWLER_MAX_TOTAL_TIME: "300"
+
+  CRAWLER_MAX_CONCURRENT_PAGES: "30"
+  CRAWLER_MEMORY_THRESHOLD: "80.0"
+  CRAWLER_USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.58 Safari/537.36"
+  
+  CRAWLER_RESPECT_ROBOTS: "false"
+  CRAWLER_DEBUG: "false"
+  
+  # Database connection (non-sensitive parts)
+  POSTGRES_HOST: "postgres.shared.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  CRAWLER_STORAGE_POSTGRES: "true"
+  
+  # Redis connection (non-sensitive parts)
+  REDIS_HOST: "redis.shared.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  CRAWLER_STORAGE_REDIS: "true"
+  
+  # Proxy Settings
+  CRAWLER_PROXY_URL: ""
+  CRAWLER_PROXY_USERNAME: ""
+  
+  # Browser Settings
+  CRAWLER_HEADLESS: "true"
+  CRAWLER_VIEWPORT_WIDTH: "1920"
+  CRAWLER_VIEWPORT_HEIGHT: "1080"
+  
+  # Domain and Pattern Settings
+  CRAWLER_ALLOWED_DOMAINS: ""
+  CRAWLER_SITE_URL: ""
+  CRAWLER_EXCLUDE_PATTERNS: "*.pdf,*.jpg,*.png,*.gif,*.zip,*.doc,*.docx,*.xls,*.xlsx,*.ppt,*.pptx,*.png"
+
+  # Cleanup Settings
+  CRAWLER_CLEANUP_INTERVAL_HOURS: "24"
+  CRAWLER_DATA_RETENTION_DAYS: "30" 
+  CRAWLER_LOG_LEVEL: "INFO"
+
+  # Ollama settings (non-sensitive)
+  OLLAMA_BASE_URL: "http://ollama.default.svc.cluster.local:11434" 
+  OLLAMA_MODEL: "qwen2.5vl:7b"
+  
+  # Renderer service URL (internal)
+  RENDERER_URL: "http://renderer.default.svc.cluster.local:8000"

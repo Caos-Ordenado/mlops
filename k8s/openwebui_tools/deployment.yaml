@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwebui-tools
+  namespace: default
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: openwebui-tools
+  template:
+    metadata:
+      labels:
+        app: openwebui-tools
+    spec:
+      containers:
+        - name: openwebui-tools
+          image: openwebui-tools:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: CRAWLER_BASE_URL
+              value: "http://web-crawler.default.svc.cluster.local:8000"
+            - name: RENDERER_BASE_URL
+              value: "http://renderer.default.svc.cluster.local:8000"
+            - name: LOG_LEVEL
+              value: "INFO"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+
+
+

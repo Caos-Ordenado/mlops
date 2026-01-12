@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - configmaps.yaml
+  # secrets.yaml - Applied separately from k8s/secrets/generated/ (not in Git)
+  - redis-secret.yaml
+  - services.yaml
+  - deployments.yaml
+  - crds.yaml
+  - appproject-crd.yaml
+  - default-project.yaml
+  - ingress.yaml
+  - middleware.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: argocd 

@@ -1,0 +1,88 @@
+deployment:
+  replicas: 1
+  podAnnotations: {}
+  podLabels: {}
+
+image:
+  tag: v3.4.0
+  pullPolicy: IfNotPresent
+
+service:
+  enabled: true
+  type: NodePort
+
+ports:
+  web:
+    port: 9080       # Internal Traefik listening port for 'web'
+    expose:
+      default: true  # Expose 'web' via the main Traefik service
+    exposedPort: 9080  # Service port for 'web'
+    nodePort: 30080
+    protocol: TCP
+    # targetPort: 9080 # Can be explicit, defaults to port
+
+  traefik: # For dashboard
+    port: 8080       # Internal Traefik listening port for 'traefik' (dashboard)
+    expose:
+      default: true  # Expose dashboard via the main Traefik service
+    exposedPort: 8080  # Service port for dashboard
+    nodePort: 31080
+    protocol: TCP
+    # targetPort: 8080
+
+  websecure:
+    port: 8443       # Internal Traefik listening port for 'websecure'
+    expose:
+      default: false # User had this disabled, so reflect that
+    exposedPort: 8443
+    protocol: TCP
+    # nodePort: <your_websecure_nodeport_if_needed> # Define if you expose websecure via NodePort
+    # tls: # Default chart often has TLS config here for websecure
+    #   enabled: true
+
+  # postgres, redis are removed from this 'ports' section.
+  # Their NodePort exposure will be managed by a custom Kubernetes Service.
+  # Their internal Traefik entrypoints are correctly defined in additionalArguments.
+
+additionalArguments:
+  - "--api.dashboard=true"
+  - "--api.insecure=true"
+  - "--log.level=DEBUG"
+  - "--entryPoints.web.address=:9080"
+
+  - "--entryPoints.traefik.address=:8080"
+  - "--entryPoints.postgres.address=:5432/tcp"
+  - "--entryPoints.redis.address=:6379/tcp"
+  # If you use websecure and want Traefik to listen on it:
+  # - "--entryPoints.websecure.address=:8443"
+
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+providers:
+  kubernetesCRD:
+    enabled: true
+    namespaces: []  # Watch all namespaces
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    matchRule: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
+    entryPoints:
+      - traefik # This should match the name of the entrypoint for the dashboard
+    middlewares:
+      - name: traefik-dashboard-stripprefix
+        namespace: kube-system
+
+middlewares:
+  dashboard-stripprefix:
+    stripPrefix:
+      prefixes:
+        - /dashboard
+        - /api 

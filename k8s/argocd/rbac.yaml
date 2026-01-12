@@ -1,0 +1,218 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-cli-argocd-application-controller
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-cli-argocd-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd-server
+    app.kubernetes.io/part-of: argocd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-application-controller
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-cli-argocd-application-controller
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-cli-argocd-server
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd-server
+    app.kubernetes.io/part-of: argocd
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-server
+  labels:
+    app.kubernetes.io/name: argocd-server
+    app.kubernetes.io/part-of: argocd
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-application-controller
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-application-controller
+subjects:
+- kind: ServiceAccount
+  name: argocd-application-controller
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-cli-argocd-application-controller
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-cli-argocd-application-controller
+subjects:
+- kind: ServiceAccount
+  name: argocd-cli-argocd-application-controller
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-cli-argocd-server
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd-server
+    app.kubernetes.io/part-of: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-cli-argocd-server
+subjects:
+- kind: ServiceAccount
+  name: argocd-cli-argocd-server
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-server
+  labels:
+    app.kubernetes.io/name: argocd-server
+    app.kubernetes.io/part-of: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd-server
+subjects:
+- kind: ServiceAccount
+  name: argocd-server
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-cli-argocd
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd
+    app.kubernetes.io/part-of: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-cli-argocd
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cli-argocd
+    app.kubernetes.io/part-of: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argocd-cli-argocd
+subjects:
+- kind: ServiceAccount
+  name: argocd
+  namespace: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: argocd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argocd
+subjects:
+- kind: ServiceAccount
+  name: argocd-application-controller
+  namespace: argocd
+- kind: ServiceAccount
+  name: argocd-cli-argocd-application-controller
+  namespace: argocd
+- kind: ServiceAccount
+  name: argocd-cli-argocd-server
+  namespace: argocd
+- kind: ServiceAccount
+  name: argocd
+  namespace: argocd 
