@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openwebui_tools"
+version = "0.1.0"
+description = "Tool proxy service for Open WebUI (crawler + renderer wrappers)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  # aiohttp + loguru come from shared, but include here for standalone installs too
+  "aiohttp>=3.9.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
+
+

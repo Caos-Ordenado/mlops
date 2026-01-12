@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/part-of: argocd
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd
+    spec:
+      containers:
+      - name: argocd
+        image: quay.io/argoproj/argocd:v2.13.2
+        imagePullPolicy: IfNotPresent
+        command:
+          - argocd-server
+          - --insecure
+          - --redis
+          - redis.shared:6379
+          - --rootpath
+          - /argocd
+          - --basehref
+          - /argocd
+        env:
+          - name: ARGOCD_REDIS_SERVER
+            value: redis.shared:6379
+          - name: ARGOCD_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: redis-password
+                name: redis-secret
+          - name: ARGOCD_SERVER_ROOT_PATH
+            value: /argocd
+          - name: ARGOCD_SERVER_BASE_HREF
+            value: /argocd
+        ports:
+          - name: http
+            containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+      volumes:
+        - name: static-files
+          emptyDir: {}
+        - name: argocd-secret
+          secret:
+            secretName: argocd-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-repo-server
+    spec:
+      containers:
+      - name: argocd-repo-server
+        image: quay.io/argoproj/argocd:v2.13.2
+        imagePullPolicy: IfNotPresent
+        command:
+          - argocd-repo-server
+          - --disable-tls
+          - --redis
+          - redis.shared:6379
+        ports:
+          - name: http
+            containerPort: 8081
+            protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        env:
+          - name: ARGOCD_REDIS_SERVER
+            value: redis.shared:6379
+          - name: ARGOCD_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: redis-password
+        volumeMounts:
+          - name: argocd-ssh-known-hosts-cm
+            mountPath: /app/config/ssh
+      volumes:
+      - name: argocd-ssh-known-hosts-cm
+        configMap:
+          name: argocd-ssh-known-hosts-cm
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-application-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: argocd-application-controller
+    spec:
+      containers:
+      - name: argocd-application-controller
+        image: quay.io/argoproj/argocd:v2.13.2
+        imagePullPolicy: IfNotPresent
+        command:
+          - argocd-application-controller
+          - --redis
+          - redis.shared:6379
+        ports:
+          - name: https-ctrl
+            containerPort: 8082
+            protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        env:
+          - name: ARGOCD_REDIS_SERVER
+            value: redis.shared:6379
+          - name: ARGOCD_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secret
+                key: redis-password
+        volumeMounts:
+          - name: argocd-ssh-known-hosts-cm
+            mountPath: /app/config/ssh
+      volumes:
+      - name: argocd-ssh-known-hosts-cm
+        configMap:
+          name: argocd-ssh-known-hosts-cm 

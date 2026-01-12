@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-k8s-metrics
+  namespace: observability
+  labels: { app: grafana, grafana_dashboard: "1" }
+data:
+  k8s-metrics.json: |
+    {
+      "id": null,
+      "uid": "k8s-metrics-main",
+      "title": "K8s • Métricas (Prometheus)",
+      "schemaVersion": 38,
+      "version": 1,
+      "tags": ["k8s","prometheus","home"],
+      "time": { "from": "now-1h", "to": "now" },
+      "refresh": "30s",
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Targets UP",
+          "gridPos": {"x":0,"y":0,"w":6,"h":4},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "expr": "sum(up)", "refId": "A" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Restarts (5m)",
+          "gridPos": {"x":6,"y":0,"w":6,"h":4},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "expr": "sum(rate(kube_pod_container_status_restarts_total[5m]))", "refId": "A" } ]
+        },
+        {
+          "type": "graph",
+          "title": "CPU nodo (%)",
+          "gridPos": {"x":12,"y":0,"w":12,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "100 - (avg by(instance)(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)" } ]
+        },
+        {
+          "type": "graph",
+          "title": "Memoria nodo (GB)",
+          "gridPos": {"x":0,"y":4,"w":12,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "refId": "A", "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 1024^3" },
+            { "refId": "B", "expr": "node_memory_MemTotal_bytes / 1024^3" }
+          ],
+          "legend": { "show": true }
+        },
+        {
+          "type": "table",
+          "title": "Restarts por namespace (5m)",
+          "gridPos": {"x":12,"y":8,"w":12,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum by (namespace) (rate(kube_pod_container_status_restarts_total[5m]))" } ]
+        },
+        {
+          "type": "graph",
+          "title": "Pods por namespace",
+          "gridPos": {"x":0,"y":12,"w":12,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum by (namespace) (kube_pod_info)" } ]
+        },
+        {
+          "type": "graph",
+          "title": "Deployments disponibles",
+          "gridPos": {"x":12,"y":12,"w":12,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum by (namespace) (kube_deployment_status_replicas_available)" } ]
+        },
+        {
+          "type": "graph",
+          "title": "Network I/O (MB/s)",
+          "gridPos": {"x":0,"y":20,"w":12,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "refId": "A", "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[5m]) / 1024 / 1024", "legendFormat": "RX {{device}}" },
+            { "refId": "B", "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m]) / 1024 / 1024", "legendFormat": "TX {{device}}" }
+          ],
+          "legend": { "show": true }
+        },
+        {
+          "type": "graph",
+          "title": "Disk Usage (%)",
+          "gridPos": {"x":12,"y":20,"w":12,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"})", "legendFormat": "Root {{instance}}" } ]
+        },
+        {
+          "type": "stat",
+          "title": "Pod Status Overview",
+          "gridPos": {"x":0,"y":28,"w":8,"h":6},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "refId": "A", "expr": "sum(kube_pod_status_phase{phase=\"Running\"})", "legendFormat": "Running" },
+            { "refId": "B", "expr": "sum(kube_pod_status_phase{phase=\"Pending\"})", "legendFormat": "Pending" },
+            { "refId": "C", "expr": "sum(kube_pod_status_phase{phase=\"Failed\"})", "legendFormat": "Failed" }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            }
+          }
+        },
+        {
+          "type": "table",
+          "title": "Top Pods por CPU",
+          "gridPos": {"x":8,"y":28,"w":16,"h":6},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "topk(10, sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{pod!=\"\"}[5m])))", "format": "table" } ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "renameByName": {
+                  "pod": "Pod",
+                  "namespace": "Namespace", 
+                  "Value": "CPU Usage"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Node Status",
+          "gridPos": {"x":0,"y":34,"w":6,"h":4},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            { "refId": "A", "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})", "legendFormat": "Ready" },
+            { "refId": "B", "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"false\"})", "legendFormat": "Not Ready" }
+          ]
+        },
+        {
+          "type": "graph",
+          "title": "Container Restarts (24h)",
+          "gridPos": {"x":6,"y":34,"w":18,"h":8},
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [ { "refId": "A", "expr": "sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total[24h]))", "legendFormat": "{{namespace}}/{{pod}}" } ]
+        }
+      ]
+    }

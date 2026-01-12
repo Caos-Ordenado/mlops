@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - argocd
+  - dozzle
+  - loki
+  - promtail
+  - grafana
+  - node-exporter
+  - kube-state-metrics
+  - prometheus
+  - shared
+  - web_crawler
+  - renderer
+  - ollama
+  - openwebui
+  - openwebui_tools
+  - website
+  - traefik

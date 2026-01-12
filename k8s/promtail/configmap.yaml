@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: observability
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 3101
+      log_level: info
+
+    clients:
+      - url: http://loki.observability.svc.cluster.local:3100/loki/api/v1/push
+
+    positions:
+      filename: /run/promtail/positions.yaml
+
+    scrape_configs:
+      # OPTION 1: Focus on applications and observability (recommended)
+      - job_name: applications
+        pipeline_stages:
+          - cri: {}
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: applications
+              __path__: /var/log/containers/*_default_*.log
+              
+      - job_name: observability
+        pipeline_stages:
+          - cri: {}
+          # Drop rate-limit error logs to prevent feedback loop
+          - match:
+              selector: '{job="observability"}'
+              stages:
+                - drop:
+                    expression: '.*Per stream rate limit exceeded.*'
+                    drop_counter_reason: 'rate_limit_feedback_loop'
+          - match:
+              selector: '{job="observability"}'
+              stages:
+                - drop:
+                    expression: '.*code = Code\(429\).*'
+                    drop_counter_reason: 'rate_limit_429_errors'
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: observability
+              __path__: /var/log/containers/*_observability_*.log
+              
+      # Optional: Include shared services (databases)
+      - job_name: infrastructure
+        pipeline_stages:
+          - cri: {}
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: infrastructure
+              __path__: /var/log/containers/*_shared_*.log
+              
+      # Traffic logs: Traefik ingress requests
+      - job_name: traffic
+        pipeline_stages:
+          - cri: {}
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: traffic
+              __path__: /var/log/containers/*traefik*_kube-system_*.log
+              
+      # DNS logs: CoreDNS for connectivity troubleshooting
+      - job_name: dns
+        pipeline_stages:
+          - cri: {}
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: dns
+              __path__: /var/log/containers/*coredns*_kube-system_*.log

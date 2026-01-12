@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openwebui-tools
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: openwebui-tools
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+
+
+

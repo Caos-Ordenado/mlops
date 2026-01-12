@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: PathPrefix(`/argocd`)
+      middlewares:
+        - name: argocd-headers-middleware
+      services:
+        - name: argocd
+          port: 8080

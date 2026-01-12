@@ -1,0 +1,31 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dozzle
+  namespace: observability
+spec:
+  entryPoints: [ web ]
+  routes:
+    - match: PathPrefix(`/logs`)
+      kind: Rule
+      services:
+        - name: dozzle
+          namespace: observability
+          port: 8080
+      middlewares:
+        - name: dozzle-headers
+          namespace: observability
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: dozzle-headers
+  namespace: observability
+spec:
+  headers:
+    customRequestHeaders:
+      Upgrade: websocket
+      Connection: upgrade
+    customResponseHeaders:
+      Upgrade: websocket
+      Connection: upgrade

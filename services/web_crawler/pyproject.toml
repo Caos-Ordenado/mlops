@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "web_crawler"
+version = "0.1.0"
+description = "Web crawler agent for AI platform"
+authors = [
+  { name = "Your Name", email = "your.email@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "lxml>=4.9.0",
+  "cssselect>=1.2.0",
+  "fake-useragent>=1.4.0",
+  "psutil>=5.9.0",
+  "requests>=2.25.0",
+  # Note: shared dependencies (aiohttp, python-dateutil, python-dotenv, 
+  # sqlalchemy, alembic, asyncpg, redis, loguru, beautifulsoup4, pydantic, 
+  # pgvector) are provided by the shared package
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0",
+  "pytest-asyncio>=0.23.0",
+  "black>=24.0.0",
+  "isort>=5.13.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"] 
