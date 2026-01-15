@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pod-gc
+spec:
+  # Hourly cleanup of pods that get stuck in "Unknown" / "ContainerStatusUnknown".
+  schedule: "17 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          serviceAccountName: pod-gc
+          restartPolicy: Never
+          containers:
+            - name: kubectl
+              image: bitnami/kubectl:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  # Delete pods whose STATUS column contains "Unknown" (includes Init:ContainerStatusUnknown).
+                  pods="$(kubectl get pods --no-headers 2>/dev/null | awk '$3 ~ /Unknown/ {print $1}')"
+                  if [ -z "${pods}" ]; then
+                    echo "No Unknown pods to delete."
+                    exit 0
+                  fi
+                  echo "Deleting Unknown pods:"
+                  echo "${pods}"
+                  # Force delete to clean up API objects quickly.
+                  echo "${pods}" | xargs -r kubectl delete pod --grace-period=0 --force

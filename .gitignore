@@ -79,3 +79,6 @@ k8s/argocd/secrets.yaml
 # Python virtual environments
 .venv/
 venv/
+
+# Certificates
+certs/

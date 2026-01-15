@@ -73,7 +73,7 @@ providers:
 ingressRoute:
   dashboard:
     enabled: true
-    matchRule: PathPrefix(`/dashboard`) || PathPrefix(`/api`)
+    matchRule: PathPrefix(`/dashboard`)
     entryPoints:
       - traefik # This should match the name of the entrypoint for the dashboard
     middlewares:
@@ -85,4 +85,3 @@ middlewares:
     stripPrefix:
       prefixes:
         - /dashboard
-        - /api 
