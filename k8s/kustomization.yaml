@@ -11,10 +11,11 @@ resources:
   - kube-state-metrics
   - prometheus
   - shared
+  - maintenance
   - web_crawler
   - renderer
   - ollama
   - openwebui
   - openwebui_tools
-  - website
+  - web
   - traefik

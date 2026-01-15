@@ -229,7 +229,7 @@ LOG_LEVEL=INFO
 HOST=0.0.0.0
 PORT=8000
 OLLAMA_BASE_URL=http://home.server:30080/ollama
-WEB_CRAWLER_BASE_URL=http://home.server:30081/crawler
+WEB_CRAWLER_BASE_URL=http://home.server:30080/crawler
 BRAVE_SEARCH_API_KEY=your_api_key_here
 ```
 

@@ -30,9 +30,67 @@ This repository demonstrates professional capabilities through a live, self-host
 - **Observability**: Prometheus, Grafana, Loki, Promtail
 - **Security**: Cloudflare Tunnel, TLS/SSL, Secret Management
 
+## 🗺️ Home Server Routing & Endpoints (MicroK8s)
+
+### Entry points (how you reach the cluster)
+- **HTTP ingress (Traefik)**: `http://home.server:30080/`
+  - Public: Cloudflare Tunnel forwards to `localhost:30080` and sets `Host` headers (e.g. `www.reyops.com`).
+  - Private: Tailscale/VPN hits `home.server:30080` directly.
+- **Traefik dashboard (NodePort)**: `http://home.server:31080/dashboard`
+  - Also reachable via `http://home.server:30080/dashboard` (path-routed), depending on your threat model.
+- **PostgreSQL (TCP via Traefik)**: `home.server:32080`
+- **Redis (TCP via Traefik)**: `home.server:32081`
+
+### HTTP routing (path/host-based)
+
+```mermaid
+flowchart TB
+  subgraph ExternalAccess
+    CloudflareTunnel[CloudflareTunnel_Public] -->|"to localhost:30080"| TraefikWeb
+    TailscaleVPN[TailscaleVPN_Private] -->|"to home.server:30080"| TraefikWeb
+  end
+
+  subgraph Cluster
+    TraefikWeb[Traefik_NodePort_30080]
+
+    Web[web_default]
+    WebCrawler[web-crawler_default]
+    Renderer[renderer_default]
+    Ollama[ollama_default]
+    Dozzle[dozzle_observability]
+    Grafana[grafana_observability]
+    OpenWebUI[openwebui_default]
+  end
+
+  TraefikWeb -->|"Host www.reyops.com, PathPrefix /"| Web
+  TraefikWeb -->|"Host www.reyops.com, PathPrefix /crawler (priority 200)"| WebCrawler
+  TraefikWeb -->|"PathPrefix /renderer"| Renderer
+  TraefikWeb -->|"PathPrefix /ollama"| Ollama
+  TraefikWeb -->|"PathPrefix /logs"| Dozzle
+  TraefikWeb -->|"PathPrefix /grafana"| Grafana
+
+  TraefikWeb -->|"Host webui.home.server OR chat.reyops.com"| OpenWebUI
+  TraefikWeb -->|"Host www.reyops.com, PathPrefix /webui (legacy)"| OpenWebUI
+```
+
+### TCP routing (databases)
+
+```mermaid
+flowchart LR
+  Client[Client] -->|"home.server:32080"| TraefikPostgres[Traefik_TCP_postgres]
+  Client -->|"home.server:32081"| TraefikRedis[Traefik_TCP_redis]
+
+  TraefikPostgres -->|"IngressRouteTCP entrypoint postgres"| PostgresSvc[postgres_shared:5432]
+  TraefikRedis -->|"IngressRouteTCP entrypoint redis"| RedisSvc[redis_shared:6379]
+```
+
+### Routing priorities (important)
+- **`/crawler` beats `/`** on `www.reyops.com` due to higher Traefik priority (crawler 200 vs web 100).
+- A **lowest-priority catch-all** keeps local/VPN access working even without host headers (`PathPrefix(/)` priority 1).
+
 ## 📍 Live Portfolio
 
-**Website**: https://reyops.com
+**Web (Nuxt SSR)**: https://reyops.com
 
 This live site showcases the infrastructure and provides links to:
 - Professional profile and skills
@@ -96,9 +154,10 @@ This infrastructure represents real-world implementation of:
 ```
 ├── agents/              # AI agents (FastAPI)
 │   └── product_search_agent/
-├── services/            # Platform services (FastAPI)
+├── services/            # Platform services (FastAPI/Node)
 │   ├── openwebui_tools/
 │   ├── renderer/
+│   ├── web/
 │   └── web_crawler/
 ├── shared/              # Shared python package (install root is shared/shared/)
 │   └── shared/
@@ -108,7 +167,7 @@ This infrastructure represents real-world implementation of:
 │   ├── loki/
 │   ├── prometheus/
 │   ├── traefik/
-│   └── website/
+│   └── web/
 └── docs/                # Documentation
 ```
 

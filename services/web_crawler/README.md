@@ -240,7 +240,7 @@ When using Redis storage:
 
 Example curl
 ```bash
-curl -s http://home.server:30081/crawler/extract-vision \
+curl -s http://home.server:30080/crawler/extract-vision \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com/product",

@@ -20,7 +20,8 @@ helm upgrade --install traefik traefik/traefik \
   --wait
 
 echo "Applying TCP IngressRoutes for PostgreSQL and Redis..."
-kubectl apply -f "${SCRIPT_DIR}/tcp-ingressroutes.yaml"
+kubectl apply -f "${SCRIPT_DIR}/../shared/postgres/ingressroute.yaml"
+kubectl apply -f "${SCRIPT_DIR}/../shared/redis/ingressroute.yaml"
 
 echo "Applying custom NodePort service for additional entrypoints..."
 kubectl apply -f "${SCRIPT_DIR}/custom-nodeports-service.yaml"
