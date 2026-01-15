@@ -1,0 +1,9 @@
+{
+  "_hash": "LOdYaSXIa_N2FzU8aYk8nWxrYaqccQEAkKHXFGp5WeQ",
+  "project": {
+    "rootDir": "/Users/fabian/dev/Personal/mlops/services/web"
+  },
+  "versions": {
+    "nuxt": "4.2.2"
+  }
+}
