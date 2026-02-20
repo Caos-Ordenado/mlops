@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "latest",
-    "devalue": "^5.6.2",
+    "devalue": "^5.6.3",
     "h3": "^2.0.1-rc.8",
     "nuxt": "latest",
     "qrcode": "^1.5.4"
