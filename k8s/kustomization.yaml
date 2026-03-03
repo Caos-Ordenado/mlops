@@ -17,5 +17,4 @@ resources:
   - ollama
   - openwebui
   - openwebui_tools
-  - web
   - traefik
