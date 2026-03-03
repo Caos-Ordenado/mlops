@@ -8,7 +8,7 @@ Open WebUI uses several **root-level** paths (e.g. `/api`, `/ws`, `/_app`, `/ass
 The recommended approach is **host-based routing**:
 
 - Private (Tailscale/VPN): `http://webui.home.server:30080/`
-  - Add `100.80.25.51 webui.home.server` to your `/etc/hosts` (or your local DNS)
+  - Add `<TAILSCALE_IP> webui.home.server` to your `/etc/hosts` (or your local DNS)
 - Public (Cloudflare tunnel): `https://chat.reyops.com/`
 
 ## Backwards compatibility (temporary)

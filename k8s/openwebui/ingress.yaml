@@ -8,7 +8,7 @@ spec:
     - web
   routes:
     # Preferred: host-based routing (avoids subpath issues with /api, /ws, /assets, /_app, etc.)
-    # Private (Tailscale/VPN): add `100.80.25.51 webui.home.server` to /etc/hosts (or your DNS)
+    # Private (Tailscale/VPN): add `<TAILSCALE_IP> webui.home.server` to /etc/hosts (or your DNS)
     - match: Host(`webui.home.server`) && PathPrefix(`/`)
       kind: Rule
       priority: 300

@@ -85,7 +85,14 @@ venv/
 # Certificates
 certs/
 
+# Node
+node_modules/
+
+# Nuxt build artifacts
+.nuxt/
+.output/
 
 # Personal Pages
-services/web/pages/susana.vue
-services/web/pages/qr.vue
+services/**/pages/susana.vue
+services/**/public/images/Susana*.jpeg
+services/**/pages/qr.vue
